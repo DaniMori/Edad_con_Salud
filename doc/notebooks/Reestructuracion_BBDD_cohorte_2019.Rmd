@@ -133,6 +133,8 @@ es necesario contemplar este hecho a la hora de hacer la reestructuración.
 
 Se propone modificar esta estructura de archivos con el objeto de eliminar
 la redundancia anteriormente mencionada.
+No obstante, es importante considerar que *se de priorizar* el
+**NO generar confusión en el equipo investigador de cara a futuro**.
 
 La complicación de que una de las BDD NO sea un subconjunto de la otra
 (es decir, ambas BBDD contienen algún caso que NO debería estar en la otra)
@@ -658,6 +660,26 @@ se borra, y la línea 217
 se sustituye por
 
 `* save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace`
+
+
+### Cambios en credenciales de OneDrive
+
+Se revoca completamente el acceso (tanto de lectura como de escritura)
+para todos los perfiles a las siguientes subcarpetas en OneDrive:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+Solamente se concede acceso
+(se dejan las credenciales por defecto heredados de las carpetas raíz)
+a los siguientes perfiles:
+
+- Propietarios de las carpetas (marta.miret@uam.es y elvira.lara@uam.es)
+
+- Responsables de mantenimiento de datos designados
 
 
 # Evaluación de propuestas
