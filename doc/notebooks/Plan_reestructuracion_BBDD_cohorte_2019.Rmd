@@ -19,27 +19,78 @@ library(pacman)
 
 p_load(knitr, ecs.data, tidyverse, lubridate, haven, glue, rlang)
 
-opts_chunk$set(echo = FALSE, results = 'asis')
+opts_chunk$set(echo = TRUE, results = 'asis')
+```
+
+```{r functions}
+print_date <- stamp("1 de enero de 1999", orders = "dmy")
 ```
 
 ```{r constants, include=FALSE}
+# Code configuration:
+
+IS_TEST <- TRUE
+# IS_TEST <- params$test
+
+
+# File system objects:
+
+## Migration file structure directories:
+
+ONEDRIVE_DIR <- file.path("~/../OneDrive - UAM") |>
+  normalizePath(winslash = '/', mustWork = TRUE)
+
+BACKUP_DIR <- file.path(ONEDRIVE_DIR, "Migration_BACKUP")
+
+
+## Current file structure:
+
+DB_BASE_DIR     <- read_ecs_folder("DB")
+C2019W1_DIR     <- file.path(DB_BASE_DIR, "Ola_3/Cohorte_2019")
+COMPLETE_DB_DIR <- file.path(C2019W1_DIR, "Muestra completa")
+PRECOVID_DB_DIR <- file.path(C2019W1_DIR, "Submuestra_1_preconfinamiento")
+
+COMPLETE_DB_FILENAME <- "PES16028242_MN_Final20210602.dta"
+PRECOVID_DB_FILENAME <-
+  "Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta"
+
+COMPLETE_DB_FILEPATH <- file.path(COMPLETE_DB_DIR, COMPLETE_DB_FILENAME)
+PRECOVID_DB_FILEPATH <- file.path(PRECOVID_DB_DIR, PRECOVID_DB_FILENAME)
+
+
+## Testing file structure:
+
+OUTPUT_TEST_DIR <- file.path(ONEDRIVE_DIR, "Migration_TEST")
+
+COMPLETE_DB_DIR_OUT <- if (IS_TEST) OUTPUT_TEST_DIR else COMPLETE_DB_DIR
+
+COMPLETE_DB_FILE_OUT <- file.path(
+  COMPLETE_DB_DIR_OUT,
+  "PES16028242_MN_Final20210602.dta"
+)
+
+
+## Migration files:
+
+MASTER_DB_FILENAME <- "rawdata_c2019w1"
+MASTER_DB_FILEPATH <- file.path(COMPLETE_DB_DIR, MASTER_DB_FILENAME, ".dta")
+
+
+# Date objects:
+
 LOCKDOWN_DATE <- dmy("14-03-2020")
 EXAMPLE_MIG_DATE <- dmy("15-11-2021")
-
-print_date <- stamp("1 de enero de 1999", orders = "dmy")
 
 ld_date_printed     <- print_date(LOCKDOWN_DATE)
 ex_mig_date_printed <- print_date(EXAMPLE_MIG_DATE)
 
-ex_mig_date_formatted <- EXAMPLE_MIG_DATE |> as.character()
+
+# Dataset objects (variables and values):
 
 INVALID_CASE_ID <- "6900702"
 
 INTERVIEW_DATE_VAR <- "q0006_date"
 int_date_var_sym <- sym(INTERVIEW_DATE_VAR)
-
-IS_TEST <- TRUE
-# IS_TEST <- params$test
 ```
 
 # Resumen
@@ -103,36 +154,6 @@ Las BBDD correspondientes a estas dos muestras
 actualmente se encuentran en las siguientes rutas del
 almacenamiento en la nube de OneDrive (carpeta de bases de datos):
 
-```{r paths}
-db_base_dir     <- read_ecs_folder("DB")
-c2019w1_dir     <- file.path(db_base_dir, "Ola_3/Cohorte_2019")
-complete_db_dir <- file.path(c2019w1_dir, "Muestra completa")
-precovid_db_dir <- file.path(c2019w1_dir, "Submuestra_1_preconfinamiento")
-
-OUTPUT_TEST_DIR <- file.path("~/../OneDrive - UAM/Migration_TEST") |>
-  normalizePath(winslash = '/', mustWork = TRUE)
-
-complete_db_file <- file.path(
-  complete_db_dir,
-  "PES16028242_MN_Final20210602.dta"
-)
-precovid_db_file <- file.path(
-  precovid_db_dir,
-  "Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta"
-)
-
-complete_db_dir_out <- if (IS_TEST) OUTPUT_TEST_DIR else complete_db_dir
-
-complete_db_file_out <- file.path(
-  complete_db_dir_out,
-  "PES16028242_MN_Final20210602.dta"
-)
-
-master_db_filename <- "C2019W1_rawdata"
-master_db_filepath <- file.path(complete_db_dir, master_db_filename, ".dta")
-```
-
-
 - Submuestra preconfinamiento:
   `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`  
   y  
@@ -170,8 +191,8 @@ preconfinamiento, con acceso restringido.
 
 ```{r load-dbs}
 # Cargar ambas BDD:
-complete_db <- read_dta(complete_db_file)
-precovid_db <- read_dta(precovid_db_file)
+complete_db <- read_dta(COMPLETE_DB_FILEPATH)
+precovid_db <- read_dta(PRECOVID_DB_FILEPATH)
 ```
 
 
@@ -278,10 +299,6 @@ Los cambios se guardan en el archivo de BDD de la muestra completa,
 
 **en formato Stata 13**.
 
-```{r}
-complete_db |> write_dta(path = complete_db_file_out)
-```
-
 
 ## Cambios en rutas
 
@@ -323,7 +340,7 @@ donde `[MIGRATION_DATE]` es la fecha de migración en formato YYYY-mm-dd;
 por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
 la ruta será
 
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/snapshot_`r ex_mig_date_formatted`.dta`
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/snapshot_`r EXAMPLE_MIG_DATE`.dta`
 
 
 El archivo de la BDD de muestra completa
@@ -332,7 +349,7 @@ El archivo de la BDD de muestra completa
 
 pasa a ser
 
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/C2019W1_rawdata.dta`
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta`
 
 
 ## Dependencias
@@ -393,7 +410,7 @@ BDD raíz en el chunk `load-data`; hay que cambiar
 
 por
 
-`use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/C2019W1_rawdata.dta"`
+`use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta"`
 
 En el chunk `save-data` hay que cambiar el comando `keep` para incluir
 las nuevas variables:
@@ -414,7 +431,7 @@ En la plantilla del paquete `ecs.data` la línea 143
 
 se cambia por
 
-`* use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/C2019W1_rawdata.dta"`
+`* use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta"`
 
 Las líneas 144 y 145 se borran.
 
