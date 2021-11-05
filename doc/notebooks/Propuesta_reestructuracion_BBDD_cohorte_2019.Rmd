@@ -201,27 +201,6 @@ precovid_db <- precovid_db |>
 ```
 
 
-También en el email de Mª Ángeles Martínez (<MariAngeles.Martinez@ipsos.com>)
-a Elvira Lara (<elvira.lara@uam.es>) el 19/01/2021 a las 13:29
-(Asunto: "Re: Datos participantes Edad con Salud - muestra refresco")
-se indica:
-
-    He abierto la BBDD y no os hemos reportado la variable q1007_HH_member.
-    Para obtenerla lo que puedes hacer es definir la variable q1007_HH_member
-    como cadena y pasar esta sintaxis:
-
-    COMPUTE q1007_HH_member=CHAR.SUBSTR(ID,8).
-    EXECUTE.
-
-Esta transformación se hace en la BDD de la submuestra preconfinamiento, ya que
-no estaba hecha.
-
-```{r compute-household-member}
-# precovid_db <- precovid_db |>
-#   mutate(q1007_HH_member = ID |> str_extract("\\d$"))
-```
-
-
 Se necesita crear una nueva variable que indique, para cada caso,
 si pertenece o no a la muestra completa
 Es importante tener en cuenta que
