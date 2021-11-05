@@ -478,12 +478,37 @@ a los siguientes perfiles:
 
 # Documentación de los cambios
 
-Este documento especifica todos los cambios.
-La versión definitiva de los cambios se debe integrar en la
+Este documento especifica todos los cambios realizados.
+La versión final se debe integrar en la
 [guía de investigadores de Edad con Salud](https://dauam.sharepoint.com/sites/EdadconSalud)
 para dejar todas estas modificaciones documentadas.
 
 
 # Plan de migración
 
+## Copia de seguridad
+
+Se copian en primer lugar las estructuras de archivos completas que se van a
+modificar, con objeto de tener una copia de seguridad en caso de que
+sea necesario revertir los cambios.
+
+```{r create-backup}
+
+```
+
+
+## Actualización de la BDD de muestra completa
+
+Los cambios en la BDD de muestra completa se guardan
+en el archivo correspondiente, **en formato Stata 13**:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
+
+
+```{r}
+complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
+```
+
+
+## 
 A concretar tras decidir la propuesta a implementar
