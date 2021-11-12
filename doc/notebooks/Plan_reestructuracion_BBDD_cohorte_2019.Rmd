@@ -22,76 +22,152 @@ p_load(knitr, ecs.data, tidyverse, lubridate, haven, glue, rlang)
 opts_chunk$set(echo = TRUE, results = 'asis')
 ```
 
-```{r functions}
+```{r functions, include=FALSE}
 print_date <- stamp("1 de enero de 1999", orders = "dmy")
+print_time <- stamp("00:00", orders = "HM")
 ```
 
 ```{r constants, include=FALSE}
-# Code configuration:
+# Execution configuration: ----
+IS_TEST <- params$test
 
-IS_TEST <- TRUE
-# IS_TEST <- params$test
+# Date objects: ----
 
-
-# File system objects:
-
-## Migration file structure directories:
-
-ONEDRIVE_DIR <- file.path("~/../OneDrive - UAM") |>
-  normalizePath(winslash = '/', mustWork = TRUE)
-
-BACKUP_DIR <- file.path(ONEDRIVE_DIR, "Migration_BACKUP")
-
-
-## Current file structure:
-
-DB_BASE_DIR     <- read_ecs_folder("DB")
-C2019W1_DIR     <- file.path(DB_BASE_DIR, "Ola_3/Cohorte_2019")
-COMPLETE_DB_DIR <- file.path(C2019W1_DIR, "Muestra completa")
-PRECOVID_DB_DIR <- file.path(C2019W1_DIR, "Submuestra_1_preconfinamiento")
-
-COMPLETE_DB_FILENAME <- "PES16028242_MN_Final20210602.dta"
-PRECOVID_DB_FILENAME <-
-  "Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta"
-
-COMPLETE_DB_FILEPATH <- file.path(COMPLETE_DB_DIR, COMPLETE_DB_FILENAME)
-PRECOVID_DB_FILEPATH <- file.path(PRECOVID_DB_DIR, PRECOVID_DB_FILENAME)
-
-
-## Testing file structure:
-
-OUTPUT_TEST_DIR <- file.path(ONEDRIVE_DIR, "Migration_TEST")
-
-COMPLETE_DB_DIR_OUT <- if (IS_TEST) OUTPUT_TEST_DIR else COMPLETE_DB_DIR
-
-COMPLETE_DB_FILE_OUT <- file.path(
-  COMPLETE_DB_DIR_OUT,
-  "PES16028242_MN_Final20210602.dta"
-)
-
-
-## Migration files:
-
-MASTER_DB_FILENAME <- "rawdata_c2019w1"
-MASTER_DB_FILEPATH <- file.path(COMPLETE_DB_DIR, MASTER_DB_FILENAME, ".dta")
-
-
-# Date objects:
-
-LOCKDOWN_DATE <- dmy("14-03-2020")
+LOCKDOWN_DATE    <- dmy("14-03-2020")
 EXAMPLE_MIG_DATE <- dmy("15-11-2021")
+MIG_DATE         <- EXAMPLE_MIG_DATE # TODO: Decide migration date
+MIG_TIME         <- hm("18:00")      # TODO: Decide migration time
 
 ld_date_printed     <- print_date(LOCKDOWN_DATE)
 ex_mig_date_printed <- print_date(EXAMPLE_MIG_DATE)
+mig_date_printed    <- print_date(MIG_DATE)
+mig_time_printed    <- MIG_TIME |> as_datetime() |> print_time()
 
 
-# Dataset objects (variables and values):
+# Data objects (variables and values): ----
 
 INVALID_CASE_ID <- "6900702"
 
 INTERVIEW_DATE_VAR <- "q0006_date"
 int_date_var_sym <- sym(INTERVIEW_DATE_VAR)
+
+
+# Verbatim objects: ----
+CREATE_FOLDER_ERROR <- "Error al crear la carpeta"
+MOVE_FOLDER_ERROR   <- "Error al cambiar la ruta"
+BY_                 <- "por"
+CODE_DELIM          <- '`'# File system objects:
+
+ALL_FILES <- '.'
+
+# File system objects: ----
+
+## Migration structure base directories:
+ONEDRIVE_DIR   <- file.path("~/../OneDrive - UAM") |>
+  normalizePath(winslash = '/', mustWork = TRUE)
+BACKUP_DIR     <- file.path(ONEDRIVE_DIR, "Migration_BACKUP")
+DB_BACKUP_DIR  <- file.path(BACKUP_DIR, "db_dir_backup")
+DOC_BACKUP_DIR <- file.path(BACKUP_DIR, "doc_dir_backup")
+
+## Current file structure:
+
+### Current subfolder structure:
+COMPLETE_SAMPLE_SUBDIR    <- "Muestra completa"
+PRECOVID_SUBSAMPLE_SUBDIR <- "Submuestra_1_preconfinamiento"
+DATASETS_SUBDIR           <- "Outcome datasets"
+DESCDOCS_SUBDIR           <- "Outcome descriptions"
+
+### DB files:
+
+DB_ROOT_DIR     <- read_ecs_folder("DB")
+C2019W1_SUBDIR  <- "Ola_3/Cohorte_2019"
+C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
+COMPLETE_DB_DIR <- file.path(C2019W1_DIR, COMPLETE_SAMPLE_SUBDIR)
+PRECOVID_DB_DIR <- file.path(C2019W1_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
+
+# (Versions to keep)
+COMPLETE_DB_FILENAME <- "PES16028242_MN_Final20210602.dta"
+PRECOVID_DB_FILENAME <-
+  "Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta"
+
+# (Old versions to delete)
+COMPLETE_DB_FILENAME_OLD <- "PES16028242_MN_Final20210602.sav"
+PRECOVID_DB_FILENAME_OLD <-
+  "Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta"
+
+COMPLETE_DB_FILE <- file.path(COMPLETE_DB_DIR, COMPLETE_DB_FILENAME)
+PRECOVID_DB_FILE <- file.path(PRECOVID_DB_DIR, PRECOVID_DB_FILENAME)
+
+
+### Documentation:
+
+DOC_ROOT_DIR    <- read_ecs_folder("DOC")
+OUTCOMES_SUBDIR <- "Edad con salud - Ola 3/Outcomes/Cohorte 2019"
+OUTCOMES_DIR    <- file.path(DOC_ROOT_DIR, OUTCOMES_SUBDIR)
+
+COMPLETE_DATASETS_SUBDIR <- file.path(COMPLETE_SAMPLE_SUBDIR, DATASETS_SUBDIR)
+COMPLETE_DESCDOCS_SUBDIR <- file.path(COMPLETE_SAMPLE_SUBDIR, DESCDOCS_SUBDIR)
+PRECOVID_DATASETS_SUBDIR <- file.path(
+  PRECOVID_SUBSAMPLE_SUBDIR,
+  DATASETS_SUBDIR
+)
+PRECOVID_DESCDOCS_SUBDIR <- file.path(
+  PRECOVID_SUBSAMPLE_SUBDIR,
+  DESCDOCS_SUBDIR
+)
+
+
+## New file structure:
+
+### New subfolder structure:
+HISTORY_SUBDIR <- "history"
+
+### DB files:
+
+# (If executing in testing mode, perform the changes in the backup files)
+DB_MIGR_DIR  <- if (IS_TEST) DB_BACKUP_DIR   else C2019W1_DIR
+
+COMPLETE_DB_DIR_OUT  <- file.path(DB_MIGR_DIR, COMPLETE_SAMPLE_SUBDIR)
+COMPLETE_DB_FILE_OUT <- file.path(COMPLETE_DB_DIR_OUT, COMPLETE_DB_FILENAME)
+COMPLETE_DB_FILE_OLD <- file.path(COMPLETE_DB_DIR_OUT, COMPLETE_DB_FILENAME_OLD)
+
+PRECOVID_DB_DIR_OUT      <- file.path(DB_MIGR_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
+PRECOVID_DB_FILE_OUT     <- file.path(PRECOVID_DB_DIR_OUT, PRECOVID_DB_FILENAME)
+PRECOVID_DB_FILENAME_NEW <- glue("snapshot_{MIG_DATE}.dta")
+PRECOVID_DB_FILE_NEW     <- file.path(
+  PRECOVID_DB_DIR_OUT,
+  PRECOVID_DB_FILENAME_NEW
+)
+PRECOVID_DB_FILE_OLD     <- file.path(
+  PRECOVID_DB_DIR_OUT,
+  PRECOVID_DB_FILENAME_OLD
+)
+
+MASTER_DB_FILENAME_NEW <- "rawdata_c2019w1.dta"
+COMPLETE_DB_FILE_NEW   <- file.path(COMPLETE_DB_DIR_OUT, MASTER_DB_FILENAME_NEW)
+
+HISTORY_DB_DIR_OUT <- file.path(DB_MIGR_DIR, HISTORY_SUBDIR)
+
+
+### Documentation files:
+
+# (If executing in testing mode, perform the changes in the backup files)
+DOC_DIR_BASE <- if (IS_TEST) DOC_BACKUP_DIR  else OUTCOMES_DIR
+
+COMPLETE_SAMPLE_DOC_DIR    <- file.path(DOC_DIR_BASE, COMPLETE_SAMPLE_SUBDIR)
+PRECOVID_SUBSAMPLE_DOC_DIR <- file.path(DOC_DIR_BASE, PRECOVID_SUBSAMPLE_SUBDIR)
+
+COMPLETE_DATASETS_DIR <- file.path(DOC_DIR_BASE, COMPLETE_DATASETS_SUBDIR)
+COMPLETE_DESCDOCS_DIR <- file.path(DOC_DIR_BASE, COMPLETE_DESCDOCS_SUBDIR)
+PRECOVID_DATASETS_DIR <- file.path(DOC_DIR_BASE, PRECOVID_DATASETS_SUBDIR)
+PRECOVID_DESCDOCS_DIR <- file.path(DOC_DIR_BASE, PRECOVID_DESCDOCS_SUBDIR)
+
+DATASETS_DIR_OUT         <- file.path(DOC_DIR_BASE, DATASETS_SUBDIR)
+DESCDOCS_DIR_OUT         <- file.path(DOC_DIR_BASE, DESCDOCS_SUBDIR)
+DATASETS_DIR_OUT_HISTORY <- file.path(DATASETS_DIR_OUT, HISTORY_SUBDIR)
+DESCDOCS_DIR_OUT_HISTORY <- file.path(DESCDOCS_DIR_OUT, HISTORY_SUBDIR)
 ```
+
 
 # Resumen
 
@@ -174,7 +250,7 @@ en la BDD de submuestra preconfinamiento pero no en la muestra total;
 es necesario contemplar este hecho a la hora de hacer la reestructuración.
 
 
-# Propuesta de modificación
+# Cambios a realizar
 
 El 03/11/2021 se aprueba
 modificar esta estructura de archivos con el objeto de eliminar
@@ -191,8 +267,8 @@ preconfinamiento, con acceso restringido.
 
 ```{r load-dbs}
 # Cargar ambas BDD:
-complete_db <- read_dta(COMPLETE_DB_FILEPATH)
-precovid_db <- read_dta(PRECOVID_DB_FILEPATH)
+complete_db <- read_dta(COMPLETE_DB_FILE)
+precovid_db <- read_dta(PRECOVID_DB_FILE)
 ```
 
 
@@ -300,6 +376,75 @@ Los cambios se guardan en el archivo de BDD de la muestra completa,
 **en formato Stata 13**.
 
 
+## Archivos afectados
+
+Se borra el archivo de BDD de la submuestra preconfinamiento en version Stata 14:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+
+(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
+<!-- # TODO: Archivo en versión SPSS (otra versión equivalente / qué hacer) ? -->
+
+El archivo de la submuestra preconfinamiento en version Stata 13
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`
+
+pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_[MIG_DATE].dta`
+
+donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd;
+por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
+la ruta será
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_`r EXAMPLE_MIG_DATE`.dta`
+
+
+<!-- # TODO: Aprobar borrado de archivo en versión SPSS -->
+Se borra el archivo de BDD de muestra completa en version Stata SPSS:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.sav`
+
+(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
+
+El archivo de la BDD de muestra completa
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
+
+pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/rawdata_c2019w1.dta`
+
+```{r update-db-files, eval=FALSE}
+# Pre-COVID DB files:
+unlink(PRECOVID_DB_FILE_OLD)
+## TODO: Version in SPSS?
+result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, PRECOVID_DB_FILE_NEW, CODE_DELIM
+  )
+}
+
+# Complete sample DB files:
+unlink(COMPLETE_DB_FILE_OLD)
+result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_NEW, CODE_DELIM
+  )
+}
+```
+
+
 ## Cambios en rutas
 
 La subcarpeta con los datos de muestra completa
@@ -319,42 +464,56 @@ junto con todos sus archivos y subcarpetas pasa a ser
 
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
 
+```{r update-db-dirs, eval=FALSE}
+# Complete sample DB files:
 
-## Archivos afectados
+result <- file.copy(
+  file.path(COMPLETE_DB_DIR_OUT, ALL_FILES),
+  DB_MIGR_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(COMPLETE_DB_DIR_OUT, recursive = TRUE)
 
-Se borra el archivo de BDD de la submuestra preconfinamiento en version Stata 14:
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DB_MIGR_DIR, CODE_DELIM
+  )
+}
 
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+# Pre-COVID subsample DB files:
 
-(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
+result <- file.rename(PRECOVID_DB_DIR_OUT, HISTORY_DB_DIR_OUT)
 
-El archivo de la submuestra preconfinamiento en version Stata 13
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
 
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`
-
-pasa a ser
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/snapshot_[MIGRATION_DATE].dta`
-
-donde `[MIGRATION_DATE]` es la fecha de migración en formato YYYY-mm-dd;
-por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
-la ruta será
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/snapshot_`r EXAMPLE_MIG_DATE`.dta`
-
-
-El archivo de la BDD de muestra completa
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
-
-pasa a ser
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta`
+# TODO: Subdirectory `Antiguas`??
+```
 
 
 ## Dependencias
 
 ### Carpetas y archivos de datasets de variables outcome
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome datasets`
+
+y todas las subcarpetas y documentos contenidos en ella pasan a estar en
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
 
 La ruta
 
@@ -366,19 +525,45 @@ pasa a ser
 
 Todos los archivos contenidos en esa carpeta se mueven a la nueva ruta.
 
-La ruta
-
-- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome datasets`
-
-y todas las subcarpetas y documentos contenidos en ella pasan a estar en
-
-- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
-
 Los archivos con los datasets de las variables outcome de muestra completa
 se deben actualizar para incluir las dos nuevas variables.
 
+```{r update-outcome-vars, eval=FALSE}
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DATASETS_DIR, DATASETS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DATASETS_DIR, DATASETS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
+```
+
 
 ### Carpetas y archivos de documentación de variables outcome
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome descriptions`
+
+y todas las subcarpetas y documentos contenidos en ella pasan a estar en
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
 
 La ruta
 
@@ -391,13 +576,31 @@ pasa a ser
 Todos los archivos contenidos en esa carpeta se mueven a la nueva ruta.
 
 
-La ruta
+```{r update-outcome-descdocs, eval=FALSE}
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DESCDOCS_DIR, DESCDOCS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT, CODE_DELIM
+  )
+}
 
-- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome descriptions`
-
-y todas las subcarpetas y documentos contenidos en ella pasan a estar en
-
-- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DESCDOCS_DIR, DESCDOCS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
+```
 
 
 ### Documentos Rmd para la generación de variables outcome
@@ -419,6 +622,7 @@ las nuevas variables:
 
 En este mismo chunk, hay que cambiar el comando `save` para utilizar la nueva
 ruta de almacenamiento de los datasets de las variables outcome:
+<!-- ## TODO: Cambiar por `saveold` para guardar en Stata 13 -->
 
 `save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/<nombre_archivo>.dta", replace`
 
@@ -473,7 +677,7 @@ a los siguientes perfiles:
 
 - Propietarios de las carpetas (marta.miret@uam.es y elvira.lara@uam.es)
 
-- Responsables de mantenimiento de datos designados
+- Responsables designados de mantenimiento de datos (<!-- # TODO: Por determinar -->)
 
 
 # Documentación de los cambios
@@ -486,14 +690,90 @@ para dejar todas estas modificaciones documentadas.
 
 # Plan de migración
 
-## Copia de seguridad
+## Preparativos previos a la migración
 
+### Notificación a usuarios
+
+Una vez se haya acordado la fecha y hora de migración se debe enviar el
+siguiente correo electrónico a las direcciones de correo de las personas con
+acceso a las carpetas compartidas de Edad con Salud:
+
+    **Asunto:** Edad con Salud: Migración de datos de Cohorte 2019 Ola 1
+    
+    **Destinatarios:**  
+    chiara.castelletti@uam.es, elvira.lara@uam.es, natalia.martinm@uam.es,
+    joseluis.ayuso@uam.es, maria.cabello@uam.es, a.gabarrell@pssjd.org,
+    beatriz.olaya@pssjd.org, mvictoria.moneta@pssjd.org, j.domenech@pssjd.org,
+    i.gine@pssjd.org, jmharo@pssjd.org, blanca.dolzdelcastellar@uam.es,
+    jesus.sierralaya@hotmail.com, marta.miret@uam.es, roberto.mediavilla@uam.es,
+    af.delatorre@ucm.es
+
+    **Contenido:**
+    
+    Como informamos el pasado 3/11, vamos a proceder a migrar las bases de datos
+    y todos los archivos dependientes de Cohorte 2019, Ola 1.
+    Podéis encontrar el plan de migración adjunto; este plan
+    **se ejecutará el próximo `r mig_date_printed` a las `r mig_time_printed`;**
+    desde ese momento,
+    **el acceso de escritura a las carpetas de Edad con Salud estará revocado**
+    **durante aproximadamente una hora**.
+    Por favor, tendelo en cuenta para que no afecte a cualquier trabajo que
+    estéis realizando con estos datos.
+    
+    Saludos,
+    
+
+### Cambios en permisos
+
+<!-- TODO: Backups de permisos, o bien permisos en subcarpetas sólo -->
+
+Los siguientes cambios deben hacerse manualmente antes de ejecutar el proceso
+de migración, en la fecha y hora acordadas.
+
+Se eliminan los permisos de escritura de todos los usuarios en las dos
+carpetas de Edad con Salud:
+
+- `Bases de datos maestras Edad con Salud`
+
+- `Documentacion Edad con Salud`
+
+a excepción de los siguientes perfiles:
+
+- Propietarios de las carpetas (marta.miret@uam.es y elvira.lara@uam.es)
+
+- Responsable de migración (daniel.morillo@inv.uam.es)
+
+
+## Copia de seguridad
 Se copian en primer lugar las estructuras de archivos completas que se van a
 modificar, con objeto de tener una copia de seguridad en caso de que
 sea necesario revertir los cambios.
 
-```{r create-backup}
+```{r reset-backup, include=FALSE}
+# Delete migration backup files (if necessary) from previous tests
+unlink(BACKUP_DIR, recursive = TRUE)
+```
 
+```{r create-backup}
+# DB files:
+dir.create(DB_BACKUP_DIR, recursive = TRUE, showWarnings = FALSE)
+result <- file.copy(
+  from      = file.path(C2019W1_DIR, ALL_FILES),
+  to        = DB_BACKUP_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+if (!result) cat(CREATE_FOLDER_ERROR, CODE_DELIM, DB_BACKUP_DIR, CODE_DELIM)
+
+# Documentation files:
+dir.create(DOC_BACKUP_DIR, recursive = TRUE, showWarnings = FALSE)
+result <- file.copy(
+  from      = file.path(OUTCOMES_DIR, ALL_FILES),
+  to        = DOC_BACKUP_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+if (!result) cat(CREATE_FOLDER_ERROR, CODE_DELIM, DOC_BACKUP_DIR, CODE_DELIM)
 ```
 
 
@@ -505,10 +785,167 @@ en el archivo correspondiente, **en formato Stata 13**:
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
 
 
-```{r}
+```{r update-db}
 complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
 ```
 
 
-## 
-A concretar tras decidir la propuesta a implementar
+## Actualizaciones en archivos
+
+Se realizan los cambios necesarios en los archivos, tanto las actualizaciones
+de nombres como la eliminación de archivos, donde proceda:
+
+```{r update-db-files-exec, ref.label="update-db-files"}
+## TODO: Delete chunk content
+# Pre-COVID DB files:
+unlink(PRECOVID_DB_FILE_OLD)
+## TODO: Version in SPSS?
+result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, PRECOVID_DB_FILE_NEW, CODE_DELIM
+  )
+}
+
+# Complete sample DB files:
+unlink(COMPLETE_DB_FILE_OLD)
+result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_NEW, CODE_DELIM
+  )
+}
+```
+
+
+## Actualización de rutas de archivo de bases de datos
+
+A continuación se modifican las rutas de archivo en el almacenamiento
+de las bases de datos
+
+```{r update-db-dirs-exec, ref.label="update-db-dirs"}
+## TODO: Delete chunk content
+# Complete sample DB files:
+
+result <- file.copy(
+  file.path(COMPLETE_DB_DIR_OUT, ALL_FILES),
+  DB_MIGR_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(COMPLETE_DB_DIR_OUT, recursive = TRUE)
+
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DB_MIGR_DIR, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+
+result <- file.rename(PRECOVID_DB_DIR_OUT, HISTORY_DB_DIR_OUT)
+
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
+```
+
+
+## Actualización de rutas en dependencias
+
+Se modifican las rutas de archivo en el almacenamiento de documentación de
+Edad con Salud, actualizando tanto las rutas de los datasets de las variables
+outcome como las de los documentos de descripción.
+
+```{r update-outcome-vars-exec, ref.label="update-outcome-vars"}
+## TODO: Delete chunk content
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DATASETS_DIR, DATASETS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DATASETS_DIR, DATASETS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
+```
+
+```{r update-outcome-descdocs-exec, ref.label="update-outcome-descdocs"}
+## TODO: Delete chunk content
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DESCDOCS_DIR, DESCDOCS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DESCDOCS_DIR, DESCDOCS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
+```
+
+```{r delete-empty-subdirs}
+unlink(COMPLETE_SAMPLE_DOC_DIR,    recursive = TRUE)
+unlink(PRECOVID_SUBSAMPLE_DOC_DIR, recursive = TRUE)
+```
+
+
+## Acciones posteriores a la migración
+
+<!-- # TODO: Completar subsecciones-->
+
+### Cambios en permisos
+
+- Restaurar permisos anteriores
+
+- Revocar todos los permisos en subcarpetas "history"
+
+### Notificación a usuarios dependencias a actualizar
+
+- Comando `keep`
+- Comando `keep` por `saveold` (con opción `, version(13)`).
