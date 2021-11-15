@@ -432,6 +432,7 @@ if (!result) {
 
 # Complete sample DB files:
 unlink(COMPLETE_DB_FILE_OLD)
+## TODO: Version in SPSS?
 result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
 if (!result) {
 
@@ -627,7 +628,7 @@ ruta de almacenamiento de los datasets de las variables outcome:
 `save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/<nombre_archivo>.dta", replace`
 
 
-### Plantilla Rmd para la generación de variables outcome
+### Plantilla Rmd para la generación de variables outcome {#rmd-template}
 
 En la plantilla del paquete `ecs.data` la línea 143
 
@@ -690,9 +691,9 @@ para dejar todas estas modificaciones documentadas.
 
 # Plan de migración
 
-## Preparativos previos a la migración
+## Actuaciones previas a la migración
 
-### Notificación a usuarios
+### Notificación a usuarios del comienzo de la migración
 
 Una vez se haya acordado la fecha y hora de migración se debe enviar el
 siguiente correo electrónico a las direcciones de correo de las personas con
@@ -935,17 +936,179 @@ unlink(PRECOVID_SUBSAMPLE_DOC_DIR, recursive = TRUE)
 ```
 
 
-## Acciones posteriores a la migración
+## Actuaciones posteriores a la migración
 
-<!-- # TODO: Completar subsecciones-->
+### Restauración de permisos
 
-### Cambios en permisos
+Los permisos cambiados al comienzo de la migración (ver sección
+[Cambios en permisos](#cambios-en-permisos)) se restauran en este paso.
 
-- Restaurar permisos anteriores
 
-- Revocar todos los permisos en subcarpetas "history"
+### Revocación de permisos en subcarpetas "history"
+
+Las siguientes subcarpetas
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+heredan los permisos de la carpeta raíz corresondiente (BDD o Documentación).
+Todos los permisos en estas subcarpetas, a excepción de los perfiles
+propietarios y responsables designados de mantenimiento,
+se revocan completamente.
+
+
+### Comprobaciones posteriores a la migración
+
+Las siguientes comprobaciones deben ser realizadas antes de dar la migración
+por finalizada.
+
+1. Los archivos en la ruta
+`Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los permisos en la ruta
+`Documentacion Edad con Salud`
+se han restaurado correctamente.
+
+1. Los permisos en las siguientes subcarpetas
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+se han asignado correctamente.
+
+
+### Actualización de dependencias en plantilla Rmd para generación de variables outcome
+
+Los cambios en la plantilla Rmarkdown se implementan según se indica
+en la sección
+[Plantilla Rmd para la generación de variables outcome](#rmd-template).
+
+
+### Notificación a usuarios del fin de la migración
+
+Una vez se hayan hecho las comprobaciones y se determine que la migración
+se ha realizado correctamente,
+se envía el siguiente correo electrónico a las direcciones de las personas con
+acceso a las carpetas compartidas de Edad con Salud:
+
+    **Asunto:** Edad con Salud: Fin de migración de datos de Cohorte 2019 Ola 1
+    
+    **Destinatarios:**  
+    chiara.castelletti@uam.es, elvira.lara@uam.es, natalia.martinm@uam.es,
+    joseluis.ayuso@uam.es, maria.cabello@uam.es, a.gabarrell@pssjd.org,
+    beatriz.olaya@pssjd.org, mvictoria.moneta@pssjd.org, j.domenech@pssjd.org,
+    i.gine@pssjd.org, jmharo@pssjd.org, blanca.dolzdelcastellar@uam.es,
+    jesus.sierralaya@hotmail.com, marta.miret@uam.es, roberto.mediavilla@uam.es,
+    af.delatorre@ucm.es
+
+    **Contenido:**
+    
+    Hola, hemos finalizado la migración de las bases de datos de Cohorte 2019,
+    ola 1.
+    Por favor, comprobad que tenéis acceso a los archivos
+    en las siguientes carpetas:
+    
+    - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019`
+    
+    - `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
+    
+    - `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+    
+    En caso de tener algún problema, comunicadnoslo a Elvira y/o a mi.
+    
+    Saludos,
+    
 
 ### Notificación a usuarios dependencias a actualizar
 
-- Comando `keep`
-- Comando `keep` por `saveold` (con opción `, version(13)`).
+Por último, se envía el siguiente correo electrónico a los miembros del equipo
+responsables de la generación de variables outcome:
+
+    **Asunto:** Edad con Salud: Actualización de dependencias para la generación de variables
+    outcome
+    
+    **Destinatarios:**  
+    chiara.castelletti@uam.es, elvira.lara@uam.es,
+    j.domenech@pssjd.org, blanca.dolzdelcastellar@uam.es,
+    jesus.sierralaya@hotmail.com, marta.miret@uam.es
+
+    **Contenido:**
+    
+    Hola, en base a la nueva estructura de datos de Cohorte 2019 - Ola 1,
+    es **necesario actualizar los documentos de Rmarkdown**
+    **para la generación de variables outcome de muestra completa**.
+    
+    Los cambios que se necesitan realizar son los siguientes:
+    
+    En el chunk de Stata llamado `load-data`, cambiar la línea
+    
+    `use "~\UAM\marta.miret@uam.es - Bases de datos maestras Edad con Salud\Ola_3\Cohorte_2019\Muestra completa\PES16028242_MN_Final20210602.dta"`
+    
+    por
+    
+    `use "~\UAM\marta.miret@uam.es - Bases de datos maestras Edad con Salud\Ola_3\Cohorte_2019\rawdata_c2019w1.dta"`
+    
+    En el chunk de Stata llamado `save-data`, cambiar la línea
+
+    `keep ID_ECS q0007a_result proxy <variable(s) generada(s)>`
+    
+    por
+    
+    `keep ID_ECS q0007a_result proxy subsample_pre interview_pre <variable(s) generada(s)>`
+    
+    (donde <variable(s) generada(s)> serán las nuevas variables outcome
+    generadas por dicho documento).
+    
+    También en el chunk de Stata `save-data`, cambiar la línea
+    
+    `save "~\UAM\marta.miret@uam.es - Documentacion Edad con Salud\Edad con salud - Ola 3\Outcomes\Cohorte 2019\Muestra completa\Outcome datasets\Outcome_<variable>_<qualifier>.dta", replace`
+    
+    por
+    
+    `save "~\UAM\marta.miret@uam.es - Documentacion Edad con Salud\Edad con salud - Ola 3\Outcomes\Cohorte 2019\Outcome datasets\Outcome_<variable>_<qualifier>.dta", replace`
+    
+    (sustituyendo <variable> y <qualifier> por lo que corresponda).
+
+    Los cambios correspondientes se han implementado también en la plantilla
+    de Rmarkdown para simplificar el trabajo en la creación de las variables
+    outcome que estén pendientes. Podéis actualizar la plantilla instalando
+    la última versión del paquete `ecs.data` ejecutando en la consola de R
+    el siguiente comando:
+    
+    `source("https://raw.githubusercontent.com/CCOMS-UAM/ecs-data/main/auto_install.R")`
+    
+    Si tenéis cualquier duda no dudéis en preguntar,
+    por email o por el canal "Creación de varaibles Outcome"
+    del equipo en Teams.
+    
+    Saludos,
+  
+  
+<!-- TODO: Comando `save` por `saveold` (con opción `, version(13)`). -->
