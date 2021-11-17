@@ -74,6 +74,7 @@ DOC_BACKUP_DIR <- file.path(BACKUP_DIR, "doc_dir_backup")
 ### Current subfolder structure:
 COMPLETE_SAMPLE_SUBDIR    <- "Muestra completa"
 PRECOVID_SUBSAMPLE_SUBDIR <- "Submuestra_1_preconfinamiento"
+HISTORY_OLD_SUBDIR        <- "Antiguas"
 DATASETS_SUBDIR           <- "Outcome datasets"
 DESCDOCS_SUBDIR           <- "Outcome descriptions"
 
@@ -84,13 +85,14 @@ C2019W1_SUBDIR  <- "Ola_3/Cohorte_2019"
 C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
 COMPLETE_DB_DIR <- file.path(C2019W1_DIR, COMPLETE_SAMPLE_SUBDIR)
 PRECOVID_DB_DIR <- file.path(C2019W1_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
+HISTORY_OLD_DIR <- file.path(C2019W1_DIR, HISTORY_OLD_SUBDIR)
 
 # (Versions to keep)
 COMPLETE_DB_FILENAME <- "PES16028242_MN_Final20210602.dta"
 PRECOVID_DB_FILENAME <-
   "Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta"
 
-# (Old versions to delete)
+# (Old versions to delete or archive)
 COMPLETE_DB_FILENAME_OLD <- "PES16028242_MN_Final20210602.sav"
 PRECOVID_DB_FILENAME_OLD <-
   "Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta"
@@ -133,7 +135,7 @@ COMPLETE_DB_FILE_OLD <- file.path(COMPLETE_DB_DIR_OUT, COMPLETE_DB_FILENAME_OLD)
 
 PRECOVID_DB_DIR_OUT      <- file.path(DB_MIGR_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
 PRECOVID_DB_FILE_OUT     <- file.path(PRECOVID_DB_DIR_OUT, PRECOVID_DB_FILENAME)
-PRECOVID_DB_FILENAME_NEW <- glue("snapshot_{MIG_DATE}.dta")
+PRECOVID_DB_FILENAME_NEW <- glue("snapshot_{MIG_DATE}_prelockdown.dta")
 PRECOVID_DB_FILE_NEW     <- file.path(
   PRECOVID_DB_DIR_OUT,
   PRECOVID_DB_FILENAME_NEW
@@ -147,6 +149,8 @@ MASTER_DB_FILENAME_NEW <- "rawdata_c2019w1.dta"
 COMPLETE_DB_FILE_NEW   <- file.path(COMPLETE_DB_DIR_OUT, MASTER_DB_FILENAME_NEW)
 
 HISTORY_DB_DIR_OUT <- file.path(DB_MIGR_DIR, HISTORY_SUBDIR)
+
+COMPLETE_DB_FILE_BAK <- file.path(HISTORY_DB_DIR_OUT, COMPLETE_DB_FILENAME_OLD)
 
 
 ### Documentation files:
@@ -376,38 +380,9 @@ Los cambios se guardan en el archivo de BDD de la muestra completa,
 **en formato Stata 13**.
 
 
-## Archivos afectados
+## Archivos de datos principales afectados
 
-Se borra el archivo de BDD de la submuestra preconfinamiento en version Stata 14:
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
-
-(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
-<!-- # TODO: Archivo en versión SPSS (otra versión equivalente / qué hacer) ? -->
-
-El archivo de la submuestra preconfinamiento en version Stata 13
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`
-
-pasa a ser
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_[MIG_DATE].dta`
-
-donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd;
-por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
-la ruta será
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_`r EXAMPLE_MIG_DATE`.dta`
-
-
-<!-- # TODO: Aprobar borrado de archivo en versión SPSS -->
-Se borra el archivo de BDD de muestra completa en version Stata SPSS:
-
-- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.sav`
-
-(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
-
-El archivo de la BDD de muestra completa
+El archivo de la BDD de muestra completa en versión Stata 13
 
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
 
@@ -415,10 +390,24 @@ pasa a ser
 
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/rawdata_c2019w1.dta`
 
+
+El archivo de la submuestra preconfinamiento en versión Stata 13
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`
+
+pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_[MIG_DATE]_prelockdown.dta`
+
+donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd;
+por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
+la ruta será
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_`r EXAMPLE_MIG_DATE`_prelockdown.dta`
+
+
 ```{r update-db-files, eval=FALSE}
-# Pre-COVID DB files:
-unlink(PRECOVID_DB_FILE_OLD)
-## TODO: Version in SPSS?
+# Pre-COVID DB file:
 result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
 if (!result) {
 
@@ -430,9 +419,7 @@ if (!result) {
   )
 }
 
-# Complete sample DB files:
-unlink(COMPLETE_DB_FILE_OLD)
-## TODO: Version in SPSS?
+# Complete sample DB file:
 result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
 if (!result) {
 
@@ -465,9 +452,22 @@ junto con todos sus archivos y subcarpetas pasa a ser
 
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
 
+
+La subcarpeta con versiones históricas de las BBDD,
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Antiguas`
+
+
+junto con todos sus archivos y subcarpetas pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+Es decir, en esta nueva ruta se incluyen todas las versiones históricas de las
+BDD.
+
+
 ```{r update-db-dirs, eval=FALSE}
 # Complete sample DB files:
-
 result <- file.copy(
   file.path(COMPLETE_DB_DIR_OUT, ALL_FILES),
   DB_MIGR_DIR,
@@ -475,7 +475,6 @@ result <- file.copy(
   copy.date = TRUE
 )
 unlink(COMPLETE_DB_DIR_OUT, recursive = TRUE)
-
 if (!result) {
   
   cat(
@@ -487,9 +486,7 @@ if (!result) {
 }
 
 # Pre-COVID subsample DB files:
-
 result <- file.rename(PRECOVID_DB_DIR_OUT, HISTORY_DB_DIR_OUT)
-
 if (!result) {
   
   cat(
@@ -500,9 +497,53 @@ if (!result) {
   )
 }
 
-# TODO: Subdirectory `Antiguas`??
+# History directory:
+result <- file.rename(HISTORY_OLD_DIR, HISTORY_DB_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, HISTORY_OLD_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
 ```
 
+
+## Versiones duplicadas de archivos de datos
+
+Se borra el archivo de BDD de la submuestra preconfinamiento en version
+Stata 14:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+
+(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
+
+
+El archivo de BDD de muestra completa en version SPSS:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.sav`
+
+pasa a estar en la ruta
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/PES16028242_MN_Final20210602.sav`
+
+```{r process-duplicated-versions, eval=FALSE}
+unlink(PRECOVID_DB_FILE_OLD) # Delete Stata 14 version
+
+# Back-up to `history` SPSS versions
+result <- file.rename(COMPLETE_DB_FILE_OLD, COMPLETE_DB_FILE_BAK)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OLD, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_BAK, CODE_DELIM
+  )
+}
+```
 
 ## Dependencias
 
@@ -622,10 +663,10 @@ las nuevas variables:
 `keep ID_ECS q0007a_result proxy ``r new_vars |> pull(var) |> glue_collapse(sep = ' ')`` <variables generadas>`
 
 En este mismo chunk, hay que cambiar el comando `save` para utilizar la nueva
-ruta de almacenamiento de los datasets de las variables outcome:
-<!-- ## TODO: Cambiar por `saveold` para guardar en Stata 13 -->
+ruta de almacenamiento de los datasets de las variables outcome,
+así como asegurar que se guarda en versión Stata 13:
 
-`save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/<nombre_archivo>.dta", replace`
+`saveold "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/<nombre_archivo>.dta", replace version(13)`
 
 
 ### Plantilla Rmd para la generación de variables outcome {#rmd-template}
@@ -658,7 +699,7 @@ se borra, y la línea 217
 
 se sustituye por
 
-`* save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace`
+`* saveold "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace version(13)`
 
 
 ## Cambios en credenciales de OneDrive
@@ -726,18 +767,18 @@ acceso a las carpetas compartidas de Edad con Salud:
 
 ### Cambios en permisos
 
-<!-- TODO: Backups de permisos, o bien permisos en subcarpetas sólo -->
-
 Los siguientes cambios deben hacerse manualmente antes de ejecutar el proceso
 de migración, en la fecha y hora acordadas.
 
-Se eliminan los permisos de escritura de todos los usuarios en las dos
-carpetas de Edad con Salud:
+Se registran manualmente todos los permisos de acceso en las dos carpetas de
+Edad con Salud:
 
 - `Bases de datos maestras Edad con Salud`
 
 - `Documentacion Edad con Salud`
 
+Después, los permisos de escritura de todos los usuarios en las dos
+carpetas de Edad con Salud se cambian por permisos de lectura,
 a excepción de los siguientes perfiles:
 
 - Propietarios de las carpetas (marta.miret@uam.es y elvira.lara@uam.es)
@@ -791,7 +832,7 @@ complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
 ```
 
 
-## Actualizaciones en archivos
+## Actualizaciones en archivos de datos principales
 
 Se realizan los cambios necesarios en los archivos, tanto las actualizaciones
 de nombres como la eliminación de archivos, donde proceda:
@@ -799,8 +840,6 @@ de nombres como la eliminación de archivos, donde proceda:
 ```{r update-db-files-exec, ref.label="update-db-files"}
 ## TODO: Delete chunk content
 # Pre-COVID DB files:
-unlink(PRECOVID_DB_FILE_OLD)
-## TODO: Version in SPSS?
 result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
 if (!result) {
 
@@ -813,7 +852,6 @@ if (!result) {
 }
 
 # Complete sample DB files:
-unlink(COMPLETE_DB_FILE_OLD)
 result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
 if (!result) {
 
@@ -865,6 +903,29 @@ if (!result) {
     CODE_DELIM, PRECOVID_DB_DIR_OUT, CODE_DELIM,
     BY_,
     CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
+```
+
+
+## Actualización en versiones duplicadas de archivos de datos
+
+Se cambian las rutas de archivo de las versiones históricas de las
+bases de datos
+
+```{r process-duplicated-versions-exec, ref.label="process-duplicated-versions"}
+# TODO: Delete chunk content
+unlink(PRECOVID_DB_FILE_OLD) # Delete Stata 14 version
+
+# Back-up to `history` SPSS versions
+result <- file.rename(COMPLETE_DB_FILE_OLD, COMPLETE_DB_FILE_BAK)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OLD, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_BAK, CODE_DELIM
   )
 }
 ```
@@ -1064,8 +1125,10 @@ responsables de la generación de variables outcome:
     Hola, en base a la nueva estructura de datos de Cohorte 2019 - Ola 1,
     es **necesario actualizar los documentos de Rmarkdown**
     **para la generación de variables outcome de muestra completa**.
+    Tened también en cuenta que hemos acordado utilizar el formato Stata 13
+    por defecto para evitar problemas de compatibilidad.
     
-    Los cambios que se necesitan realizar son los siguientes:
+    En base a ello, los cambios que se necesitan realizar son los siguientes:
     
     En el chunk de Stata llamado `load-data`, cambiar la línea
     
@@ -1092,7 +1155,7 @@ responsables de la generación de variables outcome:
     
     por
     
-    `save "~\UAM\marta.miret@uam.es - Documentacion Edad con Salud\Edad con salud - Ola 3\Outcomes\Cohorte 2019\Outcome datasets\Outcome_<variable>_<qualifier>.dta", replace`
+    `saveold "~\UAM\marta.miret@uam.es - Documentacion Edad con Salud\Edad con salud - Ola 3\Outcomes\Cohorte 2019\Outcome datasets\Outcome_<variable>_<qualifier>.dta", replace version(13)`
     
     (sustituyendo <variable> y <qualifier> por lo que corresponda).
 
@@ -1109,6 +1172,3 @@ responsables de la generación de variables outcome:
     del equipo en Teams.
     
     Saludos,
-  
-  
-<!-- TODO: Comando `save` por `saveold` (con opción `, version(13)`). -->
