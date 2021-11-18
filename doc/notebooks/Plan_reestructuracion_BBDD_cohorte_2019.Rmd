@@ -838,7 +838,7 @@ complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
 Se realizan los cambios necesarios en los archivos, tanto las actualizaciones
 de nombres como la eliminación de archivos, donde proceda:
 
-```{r update-db-files-exec, ref.label="update-db-files"}
+```{r update-db-files-run, ref.label="update-db-files"}
 ## TODO: Delete chunk content
 # Pre-COVID DB files:
 result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
@@ -871,7 +871,7 @@ if (!result) {
 A continuación se modifican las rutas de archivo en el almacenamiento
 de las bases de datos
 
-```{r update-db-dirs-exec, ref.label="update-db-dirs"}
+```{r update-db-dirs-run, ref.label="update-db-dirs"}
 ## TODO: Delete chunk content
 # Complete sample DB files:
 
@@ -914,7 +914,7 @@ if (!result) {
 Se cambian las rutas de archivo de las versiones históricas de las
 bases de datos
 
-```{r process-duplicated-versions-exec, ref.label="process-duplicated-versions"}
+```{r process-duplicated-versions-run, ref.label="process-duplicated-versions"}
 # TODO: Delete chunk content
 unlink(PRECOVID_DB_FILE_OLD) # Delete Stata 14 version
 
@@ -938,7 +938,7 @@ Se modifican las rutas de archivo en el almacenamiento de documentación de
 Edad con Salud, actualizando tanto las rutas de los datasets de las variables
 outcome como las de los documentos de descripción.
 
-```{r update-outcome-vars-exec, ref.label="update-outcome-vars"}
+```{r update-outcome-vars-run, ref.label="update-outcome-vars"}
 ## TODO: Delete chunk content
 # Complete sample DB files:
 result <- file.rename(COMPLETE_DATASETS_DIR, DATASETS_DIR_OUT)
@@ -965,7 +965,7 @@ if (!result) {
 }
 ```
 
-```{r update-outcome-descdocs-exec, ref.label="update-outcome-descdocs"}
+```{r update-outcome-descdocs-run, ref.label="update-outcome-descdocs"}
 ## TODO: Delete chunk content
 # Complete sample DB files:
 result <- file.rename(COMPLETE_DESCDOCS_DIR, DESCDOCS_DIR_OUT)
