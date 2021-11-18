@@ -725,7 +725,7 @@ a los siguientes perfiles:
 # Documentación de los cambios
 
 Este documento especifica todos los cambios realizados.
-La versión final se debe integrar en la
+La versión final de la sección "Cabmios a realizar" se debe integrar en la
 [guía de investigadores de Edad con Salud](https://dauam.sharepoint.com/sites/EdadconSalud)
 para dejar todas estas modificaciones documentadas.
 
@@ -787,6 +787,7 @@ a excepción de los siguientes perfiles:
 
 
 ## Copia de seguridad
+
 Se copian en primer lugar las estructuras de archivos completas que se van a
 modificar, con objeto de tener una copia de seguridad en caso de que
 sea necesario revertir los cambios.
