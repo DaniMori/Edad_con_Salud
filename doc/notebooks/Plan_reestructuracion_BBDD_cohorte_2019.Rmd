@@ -11,6 +11,8 @@ output:
     df_print: kable
 params:
   test: yes
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -85,7 +87,6 @@ C2019W1_SUBDIR  <- "Ola_3/Cohorte_2019"
 C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
 COMPLETE_DB_DIR <- file.path(C2019W1_DIR, COMPLETE_SAMPLE_SUBDIR)
 PRECOVID_DB_DIR <- file.path(C2019W1_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
-HISTORY_OLD_DIR <- file.path(C2019W1_DIR, HISTORY_OLD_SUBDIR)
 
 # (Versions to keep)
 COMPLETE_DB_FILENAME <- "PES16028242_MN_Final20210602.dta"
@@ -140,17 +141,16 @@ PRECOVID_DB_FILE_NEW     <- file.path(
   PRECOVID_DB_DIR_OUT,
   PRECOVID_DB_FILENAME_NEW
 )
-PRECOVID_DB_FILE_OLD     <- file.path(
-  PRECOVID_DB_DIR_OUT,
-  PRECOVID_DB_FILENAME_OLD
-)
 
 MASTER_DB_FILENAME_NEW <- "rawdata_c2019w1.dta"
 COMPLETE_DB_FILE_NEW   <- file.path(COMPLETE_DB_DIR_OUT, MASTER_DB_FILENAME_NEW)
 
+HISTORY_OLD_DIR    <- file.path(DB_MIGR_DIR, HISTORY_OLD_SUBDIR)
 HISTORY_DB_DIR_OUT <- file.path(DB_MIGR_DIR, HISTORY_SUBDIR)
 
 COMPLETE_DB_FILE_BAK <- file.path(HISTORY_DB_DIR_OUT, COMPLETE_DB_FILENAME_OLD)
+
+PRECOVID_DB_FILE_OLD <- file.path(HISTORY_DB_DIR_OUT, PRECOVID_DB_FILENAME_OLD)
 
 
 ### Documentation files:
@@ -269,14 +269,14 @@ Para resolverla, se propone conservar un histórico de la BDD de la submuestra
 preconfinamiento, con acceso restringido.
 
 
+## Procesado de datos de la muestra completa
+
 ```{r load-dbs}
 # Cargar ambas BDD:
 complete_db <- read_dta(COMPLETE_DB_FILE)
 precovid_db <- read_dta(PRECOVID_DB_FILE)
 ```
 
-
-## Procesado de datos de la muestra completa
 
 En primer lugar se necesita identificar los casos de la submuestra
 preconfinamiento.
@@ -378,6 +378,10 @@ Los cambios se guardan en el archivo de BDD de la muestra completa,
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
 
 **en formato Stata 13**.
+
+```{r update-db, eval=FALSE}
+complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
+```
 
 
 ## Archivos de datos principales afectados
@@ -498,7 +502,13 @@ if (!result) {
 }
 
 # History directory:
-result <- file.rename(HISTORY_OLD_DIR, HISTORY_DB_DIR_OUT)
+result <- file.copy(
+  file.path(HISTORY_OLD_DIR, ALL_FILES),
+  HISTORY_DB_DIR_OUT,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(HISTORY_OLD_DIR, recursive = TRUE)
 if (!result) {
   
   cat(
@@ -827,8 +837,8 @@ en el archivo correspondiente, **en formato Stata 13**:
 
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
 
-
-```{r update-db}
+```{r update-db-run, ref.label="update-db"}
+# TODO: Delete chunk content
 complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
 ```
 
@@ -874,7 +884,6 @@ de las bases de datos
 ```{r update-db-dirs-run, ref.label="update-db-dirs"}
 ## TODO: Delete chunk content
 # Complete sample DB files:
-
 result <- file.copy(
   file.path(COMPLETE_DB_DIR_OUT, ALL_FILES),
   DB_MIGR_DIR,
@@ -882,9 +891,8 @@ result <- file.copy(
   copy.date = TRUE
 )
 unlink(COMPLETE_DB_DIR_OUT, recursive = TRUE)
-
 if (!result) {
-
+  
   cat(
     MOVE_FOLDER_ERROR,
     CODE_DELIM, COMPLETE_DB_DIR_OUT, CODE_DELIM,
@@ -894,14 +902,30 @@ if (!result) {
 }
 
 # Pre-COVID subsample DB files:
-
 result <- file.rename(PRECOVID_DB_DIR_OUT, HISTORY_DB_DIR_OUT)
-
 if (!result) {
-
+  
   cat(
     MOVE_FOLDER_ERROR,
     CODE_DELIM, PRECOVID_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
+
+# History directory:
+result <- file.copy(
+  file.path(HISTORY_OLD_DIR, ALL_FILES),
+  HISTORY_DB_DIR_OUT,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(HISTORY_OLD_DIR, recursive = TRUE)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, HISTORY_OLD_DIR, CODE_DELIM,
     BY_,
     CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
   )
