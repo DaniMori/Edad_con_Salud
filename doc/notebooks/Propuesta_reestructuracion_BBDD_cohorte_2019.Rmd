@@ -1,6 +1,5 @@
 ---
-title: Plan de reestructuración de las bases de datos de la cohorte 2019 de Edad con
-  Salud
+title: "Plan de reestructuración de las bases de datos de la cohorte 2019 de Edad con Salud"
 output:
   html_notebook:
     toc: yes
