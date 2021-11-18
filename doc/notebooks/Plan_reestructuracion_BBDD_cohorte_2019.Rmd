@@ -367,7 +367,7 @@ new_vars_freq <- complete_db |> count()
 new_vars_date <- complete_db |>
   summarize(value = range(q0006_date)) |>
   mutate(date = c("init", "end")) |>
-  spread(date, value) |>
+  pivot_wider(names_from = date, values_from = value) |>
   select(init, end, everything())
 
 new_vars_freq |> full_join(new_vars_date, by = new_vars |> pull(var))
