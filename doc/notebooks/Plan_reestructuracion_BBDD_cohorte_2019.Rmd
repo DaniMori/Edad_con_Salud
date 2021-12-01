@@ -727,9 +727,9 @@ Solamente se concede acceso
 (se dejan las credenciales por defecto heredados de las carpetas raíz)
 a los siguientes perfiles:
 
-- Propietarios de las carpetas (marta.miret@uam.es y elvira.lara@uam.es)
+- Propietarios de las carpetas (marta.miret@uam.es, elvira.lara@uam.es, beatriz.olaya@pssjd.org)
 
-- Responsables designados de mantenimiento de datos (<!-- # TODO: Por determinar -->)
+- Responsables designados de mantenimiento de datos (daniel.morillo@inv.uam.es, jesus.sierralaya@inv.uam.es, j.domenech@pssjd.org)
 
 
 # Documentación de los cambios
@@ -791,7 +791,7 @@ Después, los permisos de escritura de todos los usuarios en las dos
 carpetas de Edad con Salud se cambian por permisos de lectura,
 a excepción de los siguientes perfiles:
 
-- Propietarios de las carpetas (marta.miret@uam.es y elvira.lara@uam.es)
+- Propietarios de las carpetas (marta.miret@uam.es, elvira.lara@uam.es y beatriz.olaya@pssjd.org)
 
 - Responsable de migración (daniel.morillo@inv.uam.es)
 
