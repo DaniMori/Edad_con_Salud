@@ -37,8 +37,8 @@ IS_TEST <- params$test
 
 LOCKDOWN_DATE    <- dmy("14-03-2020")
 EXAMPLE_MIG_DATE <- dmy("15-11-2021")
-MIG_DATE         <- EXAMPLE_MIG_DATE # TODO: Decide migration date
-MIG_TIME         <- hm("18:00")      # TODO: Decide migration time
+MIG_DATE         <- dmy("13-12-2021")
+MIG_TIME         <- hm("9:30")
 
 ld_date_printed     <- print_date(LOCKDOWN_DATE)
 ex_mig_date_printed <- print_date(EXAMPLE_MIG_DATE)
