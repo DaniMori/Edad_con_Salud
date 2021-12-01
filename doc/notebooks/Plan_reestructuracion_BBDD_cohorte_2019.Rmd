@@ -22,13 +22,17 @@ editor_options:
 if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
-p_load(knitr, ecs.data, tidyverse, lubridate, haven, glue, rlang)
+p_load(knitr, ecs.data, tidyverse, lubridate, readr, haven, glue, rlang)
 
 opts_chunk$set(echo = TRUE, results = 'asis')
 ```
 
 ```{r functions, include=FALSE}
-print_date <- stamp("1 de enero de 1999", orders = "dmy")
+print_date <- stamp(
+  "1 de enero de 1999",
+  orders = "dmy",
+  locale = locale(date_names = "es")
+)
 print_time <- stamp("00:00", orders = "HM")
 ```
 
