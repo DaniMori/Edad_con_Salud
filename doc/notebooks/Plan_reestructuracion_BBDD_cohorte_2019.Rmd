@@ -1,14 +1,17 @@
 ---
 title: Plan de reestructuración de las bases de datos de la cohorte 2019 de Edad con Salud
 output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+    df_print: paged
+    code_folding: show
+    code_download: yes
   html_notebook:
     toc: yes
     toc_float: yes
     toc_depth: 4
-  word_document:
-    toc: yes
-    toc_depth: '4'
-    df_print: kable
 params:
   test: yes
 editor_options: 
