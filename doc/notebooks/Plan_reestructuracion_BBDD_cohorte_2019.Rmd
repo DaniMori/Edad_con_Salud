@@ -838,6 +838,8 @@ en el archivo correspondiente, **en formato Stata 13**:
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
 
 ```{r update-db-run, ref.label="update-db"}
+# TODO: Delete chunk content
+complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
 ```
 
 
@@ -847,6 +849,30 @@ Se realizan los cambios necesarios en los archivos, tanto las actualizaciones
 de nombres como la eliminación de archivos, donde proceda:
 
 ```{r update-db-files-run, ref.label="update-db-files"}
+## TODO: Delete chunk content
+# Pre-COVID DB files:
+result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, PRECOVID_DB_FILE_NEW, CODE_DELIM
+  )
+}
+
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_NEW, CODE_DELIM
+  )
+}
 ```
 
 
@@ -856,6 +882,54 @@ A continuación se modifican las rutas de archivo en el almacenamiento
 de las bases de datos
 
 ```{r update-db-dirs-run, ref.label="update-db-dirs"}
+## TODO: Delete chunk content
+# Complete sample DB files:
+result <- file.copy(
+  file.path(COMPLETE_DB_DIR_OUT, ALL_FILES),
+  DB_MIGR_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(COMPLETE_DB_DIR_OUT, recursive = TRUE)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DB_MIGR_DIR, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DB_DIR_OUT, HISTORY_DB_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
+
+# History directory:
+result <- file.copy(
+  file.path(HISTORY_OLD_DIR, ALL_FILES),
+  HISTORY_DB_DIR_OUT,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(HISTORY_OLD_DIR, recursive = TRUE)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, HISTORY_OLD_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
 ```
 
 
@@ -865,6 +939,20 @@ Se cambian las rutas de archivo de las versiones históricas de las
 bases de datos
 
 ```{r process-duplicated-versions-run, ref.label="process-duplicated-versions"}
+# TODO: Delete chunk content
+unlink(PRECOVID_DB_FILE_OLD) # Delete Stata 14 version
+
+# Back-up to `history` SPSS versions
+result <- file.rename(COMPLETE_DB_FILE_OLD, COMPLETE_DB_FILE_BAK)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OLD, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_BAK, CODE_DELIM
+  )
+}
 ```
 
 
@@ -875,9 +963,57 @@ Edad con Salud, actualizando tanto las rutas de los datasets de las variables
 outcome como las de los documentos de descripción.
 
 ```{r update-outcome-vars-run, ref.label="update-outcome-vars"}
+## TODO: Delete chunk content
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DATASETS_DIR, DATASETS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DATASETS_DIR, DATASETS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
 ```
 
 ```{r update-outcome-descdocs-run, ref.label="update-outcome-descdocs"}
+## TODO: Delete chunk content
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DESCDOCS_DIR, DESCDOCS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DESCDOCS_DIR, DESCDOCS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
 ```
 
 ```{r delete-empty-subdirs}
