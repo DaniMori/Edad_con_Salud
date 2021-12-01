@@ -28,7 +28,11 @@ opts_chunk$set(echo = TRUE, results = 'asis')
 ```
 
 ```{r functions, include=FALSE}
-print_date <- stamp("1 de enero de 1999", orders = "dmy")
+print_date <- stamp(
+  "1 de enero de 1999",
+  orders = "dmy",
+  locale = locale(date_names = "es")
+)
 print_time <- stamp("00:00", orders = "HM")
 ```
 
