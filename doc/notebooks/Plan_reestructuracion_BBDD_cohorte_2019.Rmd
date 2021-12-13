@@ -1,0 +1,1070 @@
+---
+title: Plan de reestructuración de las bases de datos de la cohorte 2019 de Edad con Salud
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+    df_print: paged
+    code_folding: show
+    code_download: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+params:
+  test: no
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+if (!require(pacman)) install.packages("pacman")
+library(pacman)
+
+p_load(knitr, ecs.data, tidyverse, lubridate, readr, haven, glue, rlang)
+
+opts_chunk$set(echo = TRUE, results = 'asis')
+```
+
+```{r functions, include=FALSE}
+print_date <- stamp(
+  "1 de enero de 1999",
+  orders = "dmy",
+  locale = "Spanish_Spain.1252"
+)
+print_time <- stamp("00:00", orders = "HM")
+```
+
+```{r constants, include=FALSE}
+# Execution configuration: ----
+IS_TEST <- params$test
+
+# Date objects: ----
+
+LOCKDOWN_DATE    <- dmy("14-03-2020")
+EXAMPLE_MIG_DATE <- dmy("15-11-2021")
+MIG_DATE         <- dmy("13-12-2021")
+MIG_TIME         <- hm("9:30")
+
+ld_date_printed     <- print_date(LOCKDOWN_DATE)
+ex_mig_date_printed <- print_date(EXAMPLE_MIG_DATE)
+mig_date_printed    <- print_date(MIG_DATE)
+mig_time_printed    <- MIG_TIME |> as_datetime() |> print_time()
+
+
+# Data objects (variables and values): ----
+
+INVALID_CASE_ID <- "6900702"
+
+INTERVIEW_DATE_VAR <- "q0006_date"
+int_date_var_sym <- sym(INTERVIEW_DATE_VAR)
+
+
+# Verbatim objects: ----
+CREATE_FOLDER_ERROR <- "Error al crear la carpeta"
+MOVE_FOLDER_ERROR   <- "Error al cambiar la ruta"
+BY_                 <- "por"
+CODE_DELIM          <- '`'# File system objects:
+
+ALL_FILES <- '.'
+
+# File system objects: ----
+
+## Migration structure base directories:
+ONEDRIVE_DIR   <- file.path("~/../OneDrive - UAM") |>
+  normalizePath(winslash = '/', mustWork = TRUE)
+BACKUP_DIR     <- file.path(ONEDRIVE_DIR, "Migration_BACKUP")
+DB_BACKUP_DIR  <- file.path(BACKUP_DIR, "db_dir_backup")
+DOC_BACKUP_DIR <- file.path(BACKUP_DIR, "doc_dir_backup")
+
+## Current file structure:
+
+### Current subfolder structure:
+COMPLETE_SAMPLE_SUBDIR    <- "Muestra completa"
+PRECOVID_SUBSAMPLE_SUBDIR <- "Submuestra_1_preconfinamiento"
+HISTORY_OLD_SUBDIR        <- "Antiguas"
+DATASETS_SUBDIR           <- "Outcome datasets"
+DESCDOCS_SUBDIR           <- "Outcome descriptions"
+
+### DB files:
+
+DB_ROOT_DIR     <- read_ecs_folder("DB")
+C2019W1_SUBDIR  <- "Ola_3/Cohorte_2019"
+C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
+COMPLETE_DB_DIR <- file.path(C2019W1_DIR, COMPLETE_SAMPLE_SUBDIR)
+PRECOVID_DB_DIR <- file.path(C2019W1_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
+
+# (Versions to keep)
+COMPLETE_DB_FILENAME <- "PES16028242_MN_Final20210602.dta"
+PRECOVID_DB_FILENAME <-
+  "Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta"
+
+# (Old versions to delete or archive)
+COMPLETE_DB_FILENAME_OLD <- "PES16028242_MN_Final20210602.sav"
+PRECOVID_DB_FILENAME_OLD <-
+  "Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta"
+
+COMPLETE_DB_FILE <- file.path(COMPLETE_DB_DIR, COMPLETE_DB_FILENAME)
+PRECOVID_DB_FILE <- file.path(PRECOVID_DB_DIR, PRECOVID_DB_FILENAME)
+
+
+### Documentation:
+
+DOC_ROOT_DIR    <- read_ecs_folder("DOC")
+OUTCOMES_SUBDIR <- "Edad con salud - Ola 3/Outcomes/Cohorte 2019"
+OUTCOMES_DIR    <- file.path(DOC_ROOT_DIR, OUTCOMES_SUBDIR)
+
+COMPLETE_DATASETS_SUBDIR <- file.path(COMPLETE_SAMPLE_SUBDIR, DATASETS_SUBDIR)
+COMPLETE_DESCDOCS_SUBDIR <- file.path(COMPLETE_SAMPLE_SUBDIR, DESCDOCS_SUBDIR)
+PRECOVID_DATASETS_SUBDIR <- file.path(
+  PRECOVID_SUBSAMPLE_SUBDIR,
+  DATASETS_SUBDIR
+)
+PRECOVID_DESCDOCS_SUBDIR <- file.path(
+  PRECOVID_SUBSAMPLE_SUBDIR,
+  DESCDOCS_SUBDIR
+)
+
+
+## New file structure:
+
+### New subfolder structure:
+HISTORY_SUBDIR <- "history"
+
+### DB files:
+
+# (If executing in testing mode, perform the changes in the backup files)
+DB_MIGR_DIR  <- if (IS_TEST) DB_BACKUP_DIR   else C2019W1_DIR
+
+COMPLETE_DB_DIR_OUT  <- file.path(DB_MIGR_DIR, COMPLETE_SAMPLE_SUBDIR)
+COMPLETE_DB_FILE_OUT <- file.path(COMPLETE_DB_DIR_OUT, COMPLETE_DB_FILENAME)
+COMPLETE_DB_FILE_OLD <- file.path(DB_MIGR_DIR, COMPLETE_DB_FILENAME_OLD)
+
+PRECOVID_DB_DIR_OUT      <- file.path(DB_MIGR_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
+PRECOVID_DB_FILE_OUT     <- file.path(PRECOVID_DB_DIR_OUT, PRECOVID_DB_FILENAME)
+PRECOVID_DB_FILENAME_NEW <- glue("snapshot_{MIG_DATE}_prelockdown.dta")
+PRECOVID_DB_FILE_NEW     <- file.path(
+  PRECOVID_DB_DIR_OUT,
+  PRECOVID_DB_FILENAME_NEW
+)
+
+MASTER_DB_FILENAME_NEW <- "rawdata_c2019w1.dta"
+COMPLETE_DB_FILE_NEW   <- file.path(COMPLETE_DB_DIR_OUT, MASTER_DB_FILENAME_NEW)
+
+HISTORY_OLD_DIR    <- file.path(DB_MIGR_DIR, HISTORY_OLD_SUBDIR)
+HISTORY_DB_DIR_OUT <- file.path(DB_MIGR_DIR, HISTORY_SUBDIR)
+
+COMPLETE_DB_FILE_BAK <- file.path(HISTORY_DB_DIR_OUT, COMPLETE_DB_FILENAME_OLD)
+
+PRECOVID_DB_FILE_OLD <- file.path(HISTORY_DB_DIR_OUT, PRECOVID_DB_FILENAME_OLD)
+
+
+### Documentation files:
+
+# (If executing in testing mode, perform the changes in the backup files)
+DOC_DIR_BASE <- if (IS_TEST) DOC_BACKUP_DIR  else OUTCOMES_DIR
+
+COMPLETE_SAMPLE_DOC_DIR    <- file.path(DOC_DIR_BASE, COMPLETE_SAMPLE_SUBDIR)
+PRECOVID_SUBSAMPLE_DOC_DIR <- file.path(DOC_DIR_BASE, PRECOVID_SUBSAMPLE_SUBDIR)
+
+COMPLETE_DATASETS_DIR <- file.path(DOC_DIR_BASE, COMPLETE_DATASETS_SUBDIR)
+COMPLETE_DESCDOCS_DIR <- file.path(DOC_DIR_BASE, COMPLETE_DESCDOCS_SUBDIR)
+PRECOVID_DATASETS_DIR <- file.path(DOC_DIR_BASE, PRECOVID_DATASETS_SUBDIR)
+PRECOVID_DESCDOCS_DIR <- file.path(DOC_DIR_BASE, PRECOVID_DESCDOCS_SUBDIR)
+
+DATASETS_DIR_OUT         <- file.path(DOC_DIR_BASE, DATASETS_SUBDIR)
+DESCDOCS_DIR_OUT         <- file.path(DOC_DIR_BASE, DESCDOCS_SUBDIR)
+DATASETS_DIR_OUT_HISTORY <- file.path(DATASETS_DIR_OUT, HISTORY_SUBDIR)
+DESCDOCS_DIR_OUT_HISTORY <- file.path(DESCDOCS_DIR_OUT, HISTORY_SUBDIR)
+```
+
+
+# Resumen
+
+La situación actual de los datos de la cohorte 2019 (muestra de refresco)
+implica la muestra completa de participantes, por un lado, y la llamada
+"submuestra preconfinamiento" por otro,
+para los datos de la Ola 1 o *línea base*.
+Se propone un plan para reestructurar el almacenamiento,
+dejando solamente la BDD de la muestra completa,
+junto con la información necesaria para identificar los casos pertenecientes
+a la submuestra preconfinamiento.
+La base de datos de la submuestra preconfinamiento, por su parte,
+queda almacenada como versión histórica para evitar interferencias con
+la versión actual de la BDD completa.
+
+Se contemplan la documentación de los cambios en las BDD y sus
+rutas de almacenamiento, las nuevas variables,
+y un plan de migración a la nueva estructura de datos.
+
+
+# Descripción de la situación actual
+
+Los datos de Edad con Salud hacen referencia a dos cohortes distintas,
+la cohorte inicial, llamada "Cohorte 2011", y la cohorte o muestra de refresco,
+llamada "Cohorte 2019".
+El trabajo de campo de esta segunda cohorte comenzó en 2019.
+El `r ld_date_printed`, la situación de excepción producida por la pandemia
+por COVID-19 impuso restricciones a la movilidad y confinamiento
+domiciliario en todo el territorio español.
+A causa de ello el trabajo de campo tuvo que posponerse indefinidamente,
+dando lugar a que los datos de la muestra  que conforma la Cohorte 2019
+no se completasen.
+Como resultado de esta situación, se creó una BDD parcial,
+que se ha dado en llamar _submuestra preconfinamiento_.
+Esta submuestra es la que se utilizó para contactar a los participantes
+del llamado "Subestudio COVID", a los cuales se les hizo una entrevista
+telefónica poco después de levantarse las restriccciones de confinamiento
+estricto, e incluye los datos que se habían conformado hasta el momento y
+fueron enviados por la empresa adjudicataria del trabajo de campo (IPSOS).
+
+Meses después se reanudó el trabajo de campo, completándose las entrevistas y
+recogida de datos de los participantes faltantes hasta completar
+el tamaño muestral necesario.
+Como resultado, se obtuvo una BDD
+con el total de los casos que conforman la muestra de la Cohorte 2019.
+Por otro lado, es importante también recalcar que, en esta muestra completa,
+**hay casos de participantes que fueron entrevistados antes del 14 de marzo de 2020**
+pero que NO se habían procesado y volcado en la BDD
+de la submuestra preconfinamiento.
+Estos casos **NO forman parte de la submuestra preconfinamiento**.
+
+Por último, es necesario tener en cuenta que existe un caso
+(identificador único `r INVALID_CASE_ID`)
+que pertenecía a la submuestra preconfinamiento pero posteriormente
+fue invalidado por IPSOS.
+Por lo tanto,
+**este caso NO formaría parte de la BDD de la muestra completa**.
+
+Las BBDD correspondientes a estas dos muestras
+actualmente se encuentran en las siguientes rutas del
+almacenamiento en la nube de OneDrive (carpeta de bases de datos):
+
+- Submuestra preconfinamiento:
+  `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`  
+  y  
+  `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+
+- Muestra completa:
+  `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
+
+(De la submuestra preconfinamiento existen dos vesiones, como se puede ver,
+en dos formatos diferentes de Stata.)
+
+El problema principal de esta estructura de datos es la redundancia de los
+datos correspondientes a la submuestra preconfinamiento entre las
+dos BBDD, dado que estos datos se encuentran también en la BDD
+de la muestra completa casi al completo.
+No obstante, la situación se complica por el hecho de existir un caso con datos
+en la BDD de submuestra preconfinamiento pero no en la muestra total;
+es necesario contemplar este hecho a la hora de hacer la reestructuración.
+
+
+# Cambios a realizar
+
+El 03/11/2021 se aprueba
+modificar esta estructura de archivos con el objeto de eliminar
+la redundancia anteriormente mencionada.
+No obstante, es importante considerar que *se debe priorizar* el
+**NO generar confusión en el equipo investigador de cara a futuro**.
+
+La complicación de que una de las BDD NO sea un subconjunto de la otra
+(es decir, ambas BBDD contienen algún caso que NO debería estar en la otra)
+dificulta la situación.
+Para resolverla, se propone conservar un histórico de la BDD de la submuestra
+preconfinamiento, con acceso restringido.
+
+
+## Procesado de datos de la muestra completa
+
+```{r load-dbs}
+# Cargar ambas BDD:
+complete_db <- read_dta(COMPLETE_DB_FILE)
+precovid_db <- read_dta(PRECOVID_DB_FILE)
+```
+
+
+En primer lugar se necesita identificar los casos de la submuestra
+preconfinamiento.
+Para ello se necesita crear una nueva variable que indique, para cada caso,
+si pertenece o no a la muestra completa
+Es importante tener en cuenta que
+**esta variable distingue los nuevos casos de la muestra completa de aquellos que se encontraban SÓLO en la BDD de la submuestra preconfinamiento**.
+
+Se determina además la existencia de riesgo de errores al confundir la semántica
+de esta variable, interpretándose que identifica a los participantes a los que
+se entrevistó antes del confinamiento, independientemente de si formaron parte
+o no de la BDD de la *submuestra preconfinamiento*.
+Para minimiazar en la medida de lo posible este riesgo se propone crear otra
+variable que identifique los participantes que fueron entrevistados antes del
+confinamiento.
+
+```{r new-vars}
+new_vars <- tibble(
+  var   = c("subsample_pre", "interview_pre"),
+  label = c(
+    "Belongs to COVID-19 Pre-lockdown subsample",
+    "Interview respect to COVID-19 lockdown"
+  ),
+  type  = "dichotomous",
+  code  = list(c(No = 0, Yes = 1), c(Before = 1, After = 0))
+)
+
+subsample_pre_var <- new_vars |> slice(1)
+sub_pre_var_sym <- subsample_pre_var |> pull(var) |> sym()
+
+interview_pre_var <- new_vars |> slice(2)
+int_pre_var_sym <- interview_pre_var |> pull(var) |> sym()
+```
+
+
+Las nuevas variables a crear por tanto son:
+
+```{r new-vars-table}
+new_vars |> write_vars_table()
+```
+
+
+Se utilizan los identificadores únicos de la BDD de la submuestra
+preconfinamiento para distinguir los casos
+que pertenecen o no a dicha submuestra y crear la variable
+``r as_name(sub_pre_var_sym)``.
+A continuación, se crea la variable ``r as_name(int_pre_var_sym)``,
+comparando la fecha de cada entrevista (variable ``r INTERVIEW_DATE_VAR``).
+
+```{r create-subsample-var}
+precovid_db <- precovid_db |> mutate(
+  !!sub_pre_var_sym := 1 |> labelled(
+    labels = subsample_pre_var |> pull(code) |> unlist(),
+    label  = subsample_pre_var |> pull(label)
+  )
+)
+
+precovid_db_cases <- precovid_db |> select(ID_ECS, !!sub_pre_var_sym)
+
+complete_db <- complete_db |>
+  left_join(precovid_db_cases, by = "ID_ECS") |>
+  mutate(!!sub_pre_var_sym := (!!sub_pre_var_sym) |> replace_na(0))
+```
+
+```{r create-interview-date-var}
+complete_db <- complete_db |> mutate(
+  !!int_pre_var_sym := (ymd(!!int_date_var_sym) <= LOCKDOWN_DATE) |>
+    as.double() |>
+    labelled(
+      labels = interview_pre_var |> pull(code) |> unlist(),
+      label  = interview_pre_var |> pull(label)
+    )
+)
+```
+
+
+Tras aplicador estos cambios,
+el número de casos y el rango de fechas de entrevista
+por cada combinación de las nuevas variables es:
+
+```{r descriptives-new-vars, message=FALSE}
+complete_db <- complete_db |>
+  as_factor() |>
+  mutate(across(all_of(new_vars |> pull(var)), fct_rev)) |>
+  group_by(!!!syms(new_vars |> pull(var)))
+
+new_vars_freq <- complete_db |> count()
+new_vars_date <- complete_db |>
+  summarize(value = range(q0006_date)) |>
+  mutate(date = c("init", "end")) |>
+  pivot_wider(names_from = date, values_from = value) |>
+  select(init, end, everything())
+
+new_vars_freq |> full_join(new_vars_date, by = new_vars |> pull(var))
+```
+
+Los cambios se guardan en el archivo de BDD de la muestra completa,
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
+
+**en formato Stata 13**.
+
+```{r update-db, eval=FALSE}
+complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
+```
+
+
+## Archivos de datos principales afectados
+
+El archivo de la BDD de muestra completa en versión Stata 13
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
+
+pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/rawdata_c2019w1.dta`
+
+
+El archivo de la submuestra preconfinamiento en versión Stata 13
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`
+
+pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_[MIG_DATE]_prelockdown.dta`
+
+donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd;
+por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
+la ruta será
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_`r EXAMPLE_MIG_DATE`_prelockdown.dta`
+
+
+```{r update-db-files, eval=FALSE}
+# Pre-COVID DB file:
+result <- file.rename(PRECOVID_DB_FILE_OUT, PRECOVID_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, PRECOVID_DB_FILE_NEW, CODE_DELIM
+  )
+}
+
+# Complete sample DB file:
+result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_NEW)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_NEW, CODE_DELIM
+  )
+}
+```
+
+
+## Cambios en rutas
+
+La subcarpeta con los datos de muestra completa
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa`
+
+junto con todos sus archivos y subcarpetas pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019`
+
+
+La subcarpeta con los datos de submuestra preconfinamiento
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento`
+
+junto con todos sus archivos y subcarpetas pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+
+La subcarpeta con versiones históricas de las BBDD,
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Antiguas`
+
+
+junto con todos sus archivos y subcarpetas pasa a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+Es decir, en esta nueva ruta se incluyen todas las versiones históricas de las
+BDD.
+
+
+```{r update-db-dirs, eval=FALSE}
+# Complete sample DB files:
+result <- file.copy(
+  file.path(COMPLETE_DB_DIR_OUT, ALL_FILES),
+  DB_MIGR_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(COMPLETE_DB_DIR_OUT, recursive = TRUE)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DB_MIGR_DIR, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DB_DIR_OUT, HISTORY_DB_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DB_DIR_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
+
+# History directory:
+result <- file.copy(
+  file.path(HISTORY_OLD_DIR, ALL_FILES),
+  HISTORY_DB_DIR_OUT,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+unlink(HISTORY_OLD_DIR, recursive = TRUE)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, HISTORY_OLD_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, HISTORY_DB_DIR_OUT, CODE_DELIM
+  )
+}
+```
+
+
+## Versiones duplicadas de archivos de datos
+
+Se borra el archivo de BDD de la submuestra preconfinamiento en version
+Stata 14:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+
+(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
+
+
+El archivo de BDD de muestra completa en version SPSS:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.sav`
+
+pasa a estar en la ruta
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/PES16028242_MN_Final20210602.sav`
+
+```{r process-duplicated-versions, eval=FALSE}
+unlink(PRECOVID_DB_FILE_OLD) # Delete Stata 14 version
+
+# Back-up to `history` SPSS versions
+result <- file.rename(COMPLETE_DB_FILE_OLD, COMPLETE_DB_FILE_BAK)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OLD, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_BAK, CODE_DELIM
+  )
+}
+```
+
+## Dependencias
+
+### Carpetas y archivos de datasets de variables outcome
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome datasets`
+
+y todas las subcarpetas y documentos contenidos en ella pasan a estar en
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Submuestra_1_preconfinamiento/Outcome datasets`
+
+pasa a ser
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+Todos los archivos contenidos en esa carpeta se mueven a la nueva ruta.
+
+Los archivos con los datasets de las variables outcome de muestra completa
+se deben actualizar para incluir las dos nuevas variables.
+
+```{r update-outcome-vars, eval=FALSE}
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DATASETS_DIR, DATASETS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DATASETS_DIR, DATASETS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DATASETS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DATASETS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
+```
+
+
+### Carpetas y archivos de documentación de variables outcome
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome descriptions`
+
+y todas las subcarpetas y documentos contenidos en ella pasan a estar en
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Submuestra_1_preconfinamiento/Outcome descriptions`
+
+pasa a ser
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+Todos los archivos contenidos en esa carpeta se mueven a la nueva ruta.
+
+
+```{r update-outcome-descdocs, eval=FALSE}
+# Complete sample DB files:
+result <- file.rename(COMPLETE_DESCDOCS_DIR, DESCDOCS_DIR_OUT)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT, CODE_DELIM
+  )
+}
+
+# Pre-COVID subsample DB files:
+result <- file.rename(PRECOVID_DESCDOCS_DIR, DESCDOCS_DIR_OUT_HISTORY)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, PRECOVID_DESCDOCS_DIR, CODE_DELIM,
+    BY_,
+    CODE_DELIM, DESCDOCS_DIR_OUT_HISTORY, CODE_DELIM
+  )
+}
+```
+
+
+### Documentos Rmd para la generación de variables outcome
+
+Todos los documentos Rmarkdown para la generación de outcomes de Cohorte 2019
+Ola 1, muestra completa, necesitan modificar la ruta de lectura del archivo de
+BDD raíz en el chunk `load-data`; hay que cambiar
+
+`use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta"`
+
+por
+
+`use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta"`
+
+En el chunk `save-data` hay que cambiar el comando `keep` para incluir
+las nuevas variables:
+
+`keep ID_ECS q0007a_result proxy ``r new_vars |> pull(var) |> glue_collapse(sep = ' ')`` <variables generadas>`
+
+En este mismo chunk, hay que cambiar el comando `save` para utilizar la nueva
+ruta de almacenamiento de los datasets de las variables outcome,
+así como asegurar que se guarda en versión Stata 13:
+
+`saveold "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/<nombre_archivo>.dta", replace version(13)`
+
+
+### Plantilla Rmd para la generación de variables outcome {#rmd-template}
+
+En la plantilla del paquete `ecs.data` la línea 143
+
+`* use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta"`
+
+se cambia por
+
+`* use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta"`
+
+Las líneas 144 y 145 se borran.
+
+La línea 199
+
+`keep ID_ECS q0007a_result proxy <variable(s) generada(s)>`
+
+se sustituye por
+
+`keep ID_ECS q0007a_result proxy `r new_vars |> pull(var) |> glue_collapse(sep = ' ')` <variable(s) generada(s)>`
+
+La línea 216
+
+`* save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Submuestra_1_preconfinamiento/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace`
+
+se borra, y la línea 217
+
+`* save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace`
+
+se sustituye por
+
+`* saveold "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace version(13)`
+
+
+## Cambios en credenciales de OneDrive
+
+Se revoca completamente el acceso (tanto de lectura como de escritura)
+para todos los perfiles a las siguientes subcarpetas en OneDrive:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+Solamente se concede acceso
+(se dejan las credenciales por defecto heredados de las carpetas raíz)
+a los siguientes perfiles:
+
+- Propietarios de las carpetas (marta.miret@uam.es, elvira.lara@uam.es, beatriz.olaya@pssjd.org)
+
+- Responsables designados de mantenimiento de datos (daniel.morillo@inv.uam.es, jesus.sierralaya@inv.uam.es, j.domenech@pssjd.org)
+
+
+# Documentación de los cambios
+
+Este documento especifica todos los cambios realizados.
+La versión final de la sección "Cabmios a realizar" se debe integrar en la
+[guía de investigadores de Edad con Salud](https://dauam.sharepoint.com/sites/EdadconSalud)
+para dejar todas estas modificaciones documentadas.
+
+
+# Plan de migración
+
+## Actuaciones previas a la migración
+
+### Notificación a usuarios del comienzo de la migración
+
+Una vez se haya acordado la fecha y hora de migración se debe enviar el
+siguiente correo electrónico a las direcciones de correo de las personas con
+acceso a las carpetas compartidas de Edad con Salud:
+
+    **Asunto:** Edad con Salud: Migración de datos de Cohorte 2019 Ola 1
+    
+    **Destinatarios:**  
+    chiara.castelletti@uam.es, elvira.lara@uam.es, natalia.martinm@uam.es,
+    joseluis.ayuso@uam.es, maria.cabello@uam.es, a.gabarrell@pssjd.org,
+    beatriz.olaya@pssjd.org, mvictoria.moneta@pssjd.org, j.domenech@pssjd.org,
+    i.gine@pssjd.org, jmharo@pssjd.org, blanca.dolzdelcastellar@uam.es,
+    jesus.sierralaya@hotmail.com, marta.miret@uam.es, roberto.mediavilla@uam.es,
+    af.delatorre@ucm.es
+
+    **Contenido:**
+    
+    Como informamos el pasado 3/11, vamos a proceder a migrar las bases de datos
+    y todos los archivos dependientes de Cohorte 2019, Ola 1.
+    Podéis encontrar el plan de migración adjunto; este plan
+    **se ejecutará el próximo `r mig_date_printed` a las `r mig_time_printed`;**
+    desde ese momento,
+    **el acceso de escritura a las carpetas de Edad con Salud estará revocado**
+    **durante aproximadamente una hora**.
+    Por favor, tendelo en cuenta para que no afecte a cualquier trabajo que
+    estéis realizando con estos datos.
+    
+    Saludos,
+    
+
+### Cambios en permisos
+
+Los siguientes cambios deben hacerse manualmente antes de ejecutar el proceso
+de migración, en la fecha y hora acordadas.
+
+Se registran manualmente todos los permisos de acceso en las dos carpetas de
+Edad con Salud:
+
+- `Bases de datos maestras Edad con Salud`
+
+- `Documentacion Edad con Salud`
+
+Después, los permisos de escritura de todos los usuarios en las dos
+carpetas de Edad con Salud se cambian por permisos de lectura,
+a excepción de los siguientes perfiles:
+
+- Propietarios de las carpetas (marta.miret@uam.es, elvira.lara@uam.es y beatriz.olaya@pssjd.org)
+
+- Responsable de migración (daniel.morillo@inv.uam.es)
+
+
+## Copia de seguridad
+
+Se copian en primer lugar las estructuras de archivos completas que se van a
+modificar, con objeto de tener una copia de seguridad en caso de que
+sea necesario revertir los cambios.
+
+```{r reset-backup, include=FALSE}
+# Delete migration backup files (if necessary) from previous tests
+unlink(BACKUP_DIR, recursive = TRUE)
+```
+
+```{r create-backup}
+# DB files:
+dir.create(DB_BACKUP_DIR, recursive = TRUE, showWarnings = FALSE)
+result <- file.copy(
+  from      = file.path(C2019W1_DIR, ALL_FILES),
+  to        = DB_BACKUP_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+if (!result) cat(CREATE_FOLDER_ERROR, CODE_DELIM, DB_BACKUP_DIR, CODE_DELIM)
+
+# Documentation files:
+dir.create(DOC_BACKUP_DIR, recursive = TRUE, showWarnings = FALSE)
+result <- file.copy(
+  from      = file.path(OUTCOMES_DIR, ALL_FILES),
+  to        = DOC_BACKUP_DIR,
+  recursive = TRUE,
+  copy.date = TRUE
+)
+if (!result) cat(CREATE_FOLDER_ERROR, CODE_DELIM, DOC_BACKUP_DIR, CODE_DELIM)
+```
+
+
+## Actualización de la BDD de muestra completa
+
+Los cambios en la BDD de muestra completa se guardan
+en el archivo correspondiente, **en formato Stata 13**:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
+
+```{r update-db-run, ref.label="update-db"}
+```
+
+
+## Actualizaciones en archivos de datos principales
+
+Se realizan los cambios necesarios en los archivos, tanto las actualizaciones
+de nombres como la eliminación de archivos, donde proceda:
+
+```{r update-db-files-run, ref.label="update-db-files"}
+```
+
+
+## Actualización de rutas de archivo de bases de datos
+
+A continuación se modifican las rutas de archivo en el almacenamiento
+de las bases de datos
+
+```{r update-db-dirs-run, ref.label="update-db-dirs"}
+```
+
+
+## Actualización en versiones duplicadas de archivos de datos
+
+Se cambian las rutas de archivo de las versiones históricas de las
+bases de datos
+
+```{r process-duplicated-versions-run, ref.label="process-duplicated-versions"}
+```
+
+
+## Actualización de rutas en dependencias
+
+Se modifican las rutas de archivo en el almacenamiento de documentación de
+Edad con Salud, actualizando tanto las rutas de los datasets de las variables
+outcome como las de los documentos de descripción.
+
+```{r update-outcome-vars-run, ref.label="update-outcome-vars"}
+```
+
+```{r update-outcome-descdocs-run, ref.label="update-outcome-descdocs"}
+```
+
+```{r delete-empty-subdirs}
+unlink(COMPLETE_SAMPLE_DOC_DIR,    recursive = TRUE)
+unlink(PRECOVID_SUBSAMPLE_DOC_DIR, recursive = TRUE)
+```
+
+
+## Actuaciones posteriores a la migración
+
+### Restauración de permisos
+
+Los permisos cambiados al comienzo de la migración (ver sección
+[Cambios en permisos](#cambios-en-permisos)) se restauran en este paso.
+
+
+### Revocación de permisos en subcarpetas "history"
+
+Las siguientes subcarpetas
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+heredan los permisos de la carpeta raíz corresondiente (BDD o Documentación).
+Todos los permisos en estas subcarpetas, a excepción de los perfiles
+propietarios y responsables designados de mantenimiento,
+se revocan completamente.
+
+
+### Comprobaciones posteriores a la migración
+
+Las siguientes comprobaciones deben ser realizadas antes de dar la migración
+por finalizada.
+
+1. Los archivos en la ruta
+`Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los archivos en la ruta
+`Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+se corresonden con los archivos en la carpeta de backup.
+
+1. Los permisos en la ruta
+`Documentacion Edad con Salud`
+se han restaurado correctamente.
+
+1. Los permisos en las siguientes subcarpetas
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+se han asignado correctamente.
+
+
+### Actualización de dependencias en plantilla Rmd para generación de variables outcome
+
+Los cambios en la plantilla Rmarkdown se implementan según se indica
+en la sección
+[Plantilla Rmd para la generación de variables outcome](#rmd-template).
+
+
+### Notificación a usuarios del fin de la migración
+
+Una vez se hayan hecho las comprobaciones y se determine que la migración
+se ha realizado correctamente,
+se envía el siguiente correo electrónico a las direcciones de las personas con
+acceso a las carpetas compartidas de Edad con Salud:
+
+    **Asunto:** Edad con Salud: Fin de migración de datos de Cohorte 2019 Ola 1
+    
+    **Destinatarios:**  
+    chiara.castelletti@uam.es, elvira.lara@uam.es, natalia.martinm@uam.es,
+    joseluis.ayuso@uam.es, maria.cabello@uam.es, a.gabarrell@pssjd.org,
+    beatriz.olaya@pssjd.org, mvictoria.moneta@pssjd.org, j.domenech@pssjd.org,
+    i.gine@pssjd.org, jmharo@pssjd.org, blanca.dolzdelcastellar@uam.es,
+    jesus.sierralaya@hotmail.com, marta.miret@uam.es, roberto.mediavilla@uam.es,
+    af.delatorre@ucm.es
+
+    **Contenido:**
+    
+    Hola, hemos finalizado la migración de las bases de datos de Cohorte 2019,
+    ola 1.
+    Por favor, comprobad que tenéis acceso a los archivos
+    en las siguientes carpetas:
+    
+    - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019`
+    
+    - `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
+    
+    - `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+    
+    En caso de tener algún problema, comunicadnoslo a Elvira y/o a mi.
+    
+    Saludos,
+    
+
+### Notificación a usuarios dependencias a actualizar
+
+Por último, se envía el siguiente correo electrónico a los miembros del equipo
+responsables de la generación de variables outcome:
+
+    **Asunto:** Edad con Salud: Actualización de dependencias para la generación de variables
+    outcome
+    
+    **Destinatarios:**  
+    chiara.castelletti@uam.es, elvira.lara@uam.es,
+    j.domenech@pssjd.org, blanca.dolzdelcastellar@uam.es,
+    jesus.sierralaya@hotmail.com, marta.miret@uam.es
+
+    **Contenido:**
+    
+    Hola, en base a la nueva estructura de datos de Cohorte 2019 - Ola 1,
+    es **necesario actualizar los documentos de Rmarkdown**
+    **para la generación de variables outcome de muestra completa**.
+    Tened también en cuenta que hemos acordado utilizar el formato Stata 13
+    por defecto para evitar problemas de compatibilidad.
+    
+    En base a ello, los cambios que se necesitan realizar son los siguientes:
+    
+    En el chunk de Stata llamado `load-data`, cambiar la línea
+    
+    `use "~\UAM\marta.miret@uam.es - Bases de datos maestras Edad con Salud\Ola_3\Cohorte_2019\Muestra completa\PES16028242_MN_Final20210602.dta"`
+    
+    por
+    
+    `use "~\UAM\marta.miret@uam.es - Bases de datos maestras Edad con Salud\Ola_3\Cohorte_2019\rawdata_c2019w1.dta"`
+    
+    En el chunk de Stata llamado `save-data`, cambiar la línea
+
+    `keep ID_ECS q0007a_result proxy <variable(s) generada(s)>`
+    
+    por
+    
+    `keep ID_ECS q0007a_result proxy subsample_pre interview_pre <variable(s) generada(s)>`
+    
+    (donde <variable(s) generada(s)> serán las nuevas variables outcome
+    generadas por dicho documento).
+    
+    También en el chunk de Stata `save-data`, cambiar la línea
+    
+    `save "~\UAM\marta.miret@uam.es - Documentacion Edad con Salud\Edad con salud - Ola 3\Outcomes\Cohorte 2019\Muestra completa\Outcome datasets\Outcome_<variable>_<qualifier>.dta", replace`
+    
+    por
+    
+    `saveold "~\UAM\marta.miret@uam.es - Documentacion Edad con Salud\Edad con salud - Ola 3\Outcomes\Cohorte 2019\Outcome datasets\Outcome_<variable>_<qualifier>.dta", replace version(13)`
+    
+    (sustituyendo <variable> y <qualifier> por lo que corresponda).
+
+    Los cambios correspondientes se han implementado también en la plantilla
+    de Rmarkdown para simplificar el trabajo en la creación de las variables
+    outcome que estén pendientes. Podéis actualizar la plantilla instalando
+    la última versión del paquete `ecs.data` ejecutando en la consola de R
+    el siguiente comando:
+    
+    `source("https://raw.githubusercontent.com/CCOMS-UAM/ecs-data/main/auto_install.R")`
+    
+    Si tenéis cualquier duda no dudéis en preguntar,
+    por email o por el canal "Creación de varaibles Outcome"
+    del equipo en Teams.
+    
+    Saludos,
