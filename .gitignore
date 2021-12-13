@@ -39,5 +39,6 @@ vignettes/*.pdf
 .Renviron
 
 # .Rmd outputs
-*.html
-*.docx
+doc/*.html
+doc/*.docx
+doc/*.md

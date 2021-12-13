@@ -1,0 +1,454 @@
+---
+title: Plan de reestructuración de las bases de datos de la cohorte 2019 de Edad con Salud
+output:
+  md_document:
+    variant: gfm
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+if (!require(pacman)) install.packages("pacman")
+library(pacman)
+
+p_load(knitr, ecs.data, tidyverse, lubridate, readr, haven, glue, rlang, pander)
+
+opts_chunk$set(echo = FALSE, results = 'asis')
+
+options(rmarkdown.df_print = FALSE)
+```
+
+```{r functions, include=FALSE}
+print_date <- stamp(
+  "1 de enero de 1999",
+  orders = "dmy",
+  locale = "Spanish_Spain.1252"
+)
+```
+
+```{r constants, include=FALSE}
+# Date objects: ----
+
+LOCKDOWN_DATE    <- dmy("14-03-2020")
+EXAMPLE_MIG_DATE <- dmy("15-11-2021")
+MIG_DATE         <- dmy("13-12-2021")
+
+ld_date_printed     <- print_date(LOCKDOWN_DATE)
+mig_date_printed    <- print_date(MIG_DATE)
+
+
+# Data objects (variables and values): ----
+
+INVALID_CASE_ID <- "6900702"
+
+INTERVIEW_DATE_VAR <- "q0006_date"
+int_date_var_sym   <- sym(INTERVIEW_DATE_VAR)
+
+
+# File system objects: ----
+
+## File structure:
+
+DB_ROOT_DIR     <- read_ecs_folder("DB")
+C2019W1_SUBDIR  <- "Ola_3/Cohorte_2019"
+C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
+
+HISTORY_SUBDIR     <- "history"
+HISTORY_DB_DIR_OUT <- file.path(C2019W1_DIR, HISTORY_SUBDIR)
+
+
+## DB files:
+
+MASTER_DB_FILENAME   <- "rawdata_c2019w1.dta"
+COMPLETE_DB_FILEPATH <- file.path(C2019W1_DIR, MASTER_DB_FILENAME)
+
+PRECOVID_DB_FILENAME <- glue("snapshot_{MIG_DATE}_prelockdown.dta")
+PRECOVID_DB_FILEPATH <- file.path(HISTORY_DB_DIR_OUT, PRECOVID_DB_FILENAME)
+```
+
+
+# Resumen
+
+La situación anterior de los datos de la cohorte 2019 (muestra de refresco)
+implicaba la muestra completa de participantes, por un lado, y la llamada
+"submuestra preconfinamiento" por otro,
+para los datos de la Ola 1 o *línea base*.
+El `r mig_date_printed` se hizo una reestructuración del almacenamiento,
+dejando solamente la BDD de la muestra completa,
+junto con la información necesaria para identificar los casos pertenecientes
+a la submuestra preconfinamiento.
+La base de datos de la submuestra preconfinamiento, por su parte,
+se almacenó como versión histórica para evitar interferencias con
+la versión actual de la BDD completa.
+
+En esta página se contemplas la documentación de los cambios en las BDD y sus
+rutas de almacenamiento y las nuevas variables.
+
+El plan completo de migración llevado a cabo el `r mig_date_printed`
+se puede consultar en
+https://raw.githubusercontent.com/CCOMS-UAM/Edad_con_Salud/main/doc/notebooks/Plan_reestructuracion_BBDD_cohorte_2019.html?token=AB62S5AI5ZUT3CERPC5KMSTBW4742
+(Se necesita cuenta en Github para acceder).
+
+
+# Descripción de la situación anterior
+
+Los datos de Edad con Salud hacen referencia a dos cohortes distintas,
+la cohorte inicial, llamada "Cohorte 2011", y la cohorte o muestra de refresco,
+llamada "Cohorte 2019".
+El trabajo de campo de esta segunda cohorte comenzó en 2019.
+El `r ld_date_printed`, la situación de excepción producida por la pandemia
+por COVID-19 impuso restricciones a la movilidad y confinamiento
+domiciliario en todo el territorio español.
+A causa de ello el trabajo de campo tuvo que posponerse indefinidamente,
+dando lugar a que los datos de la muestra  que conforma la Cohorte 2019
+no se completasen.
+Como resultado de esta situación, se creó una BDD parcial,
+que se ha dado en llamar _submuestra preconfinamiento_.
+Esta submuestra es la que se utilizó para contactar a los participantes
+del llamado "Subestudio COVID", a los cuales se les hizo una entrevista
+telefónica poco después de levantarse las restriccciones de confinamiento
+estricto, e incluye los datos que se habían conformado hasta el momento y
+fueron enviados por la empresa adjudicataria del trabajo de campo (IPSOS).
+
+Meses después se reanudó el trabajo de campo, completándose las entrevistas y
+recogida de datos de los participantes faltantes hasta completar
+el tamaño muestral necesario.
+Como resultado, se obtuvo una BDD
+con el total de los casos que conforman la muestra de la Cohorte 2019.
+Por otro lado, es importante también recalcar que, en esta muestra completa,
+**hay casos de participantes que fueron entrevistados antes del 14 de marzo de 2020**
+pero que NO se habían procesado y volcado en la BDD
+de la submuestra preconfinamiento.
+Estos casos **NO forman parte de la submuestra preconfinamiento**.
+
+Por último, es necesario tener en cuenta que existe un caso
+(identificador único `r INVALID_CASE_ID`)
+que pertenecía a la submuestra preconfinamiento pero posteriormente
+fue invalidado por IPSOS.
+Por lo tanto,
+**este caso NO formaría parte de la BDD de la muestra completa**.
+
+Las BBDD correspondientes a estas dos muestras
+se encontraban en las siguientes rutas del
+almacenamiento en la nube de OneDrive (carpeta de bases de datos):
+
+- Submuestra preconfinamiento:
+  `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`  
+  y  
+  `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+
+- Muestra completa:
+  `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
+
+(De la submuestra preconfinamiento existían dos vesiones
+en dos formatos diferentes de Stata.)
+
+El problema principal de esta estructura de datos era la redundancia de los
+datos correspondientes a la submuestra preconfinamiento entre las
+dos BBDD, dado que estos datos se encontraban también en la BDD
+de la muestra completa casi al completo.
+No obstante, el hecho de existir un caso con datos en la BDD
+de submuestra preconfinamiento pero no en la muestra total
+complicaba la situación;
+fue necesario contemplar este hecho a la hora de hacer la reestructuración.
+
+
+# Cambios a realizar
+
+El 03 de noviembre de 2021 se aprobó
+modificar esta estructura de archivos con el objeto de eliminar
+la redundancia anteriormente mencionada.
+No obstante, también se aprobó *priorizar* el
+**NO generar confusión en el equipo investigador de cara a futuro**.
+
+La complicación de que una de las BDD NO fuese un subconjunto de la otra
+(es decir, ambas BBDD contenían algún caso que NO debería estar en la otra)
+dificultaba la situación.
+Para resolverla, se aprobó conservar un histórico de la BDD de la submuestra
+preconfinamiento, con acceso restringido.
+
+
+## Procesado de datos de la muestra completa
+
+```{r load-dbs}
+# Cargar ambas BDD:
+complete_db <- read_dta(COMPLETE_DB_FILEPATH)
+precovid_db <- read_dta(PRECOVID_DB_FILEPATH)
+```
+
+
+En primer lugar se identificaron los casos de la submuestra
+preconfinamiento.
+Para ello se ha creado una nueva variable indicando, para cada caso,
+si pertenecía o no a la muestra completa
+Es importante tener en cuenta que
+**esta variable distingue los nuevos casos de la muestra completa de aquellos que se encontraban SÓLO en la BDD de la submuestra preconfinamiento**.
+
+Se determinó además la existencia de riesgo de errores al confundir la semántica
+de esta variable, pudiendo interpretrse que identifica a los participantes
+a los que se entrevistó antes del confinamiento,
+independientemente de si formaron parte o no de la BDD
+de la *submuestra preconfinamiento*.
+Para minimiazar en la medida de lo posible este riesgo se ha creado otra
+variable que identifica los participantes que fueron entrevistados antes del
+confinamiento.
+
+```{r new-vars}
+new_vars <- tibble(
+  var   = c("subsample_pre", "interview_pre"),
+  label = c(
+    "Belongs to COVID-19 Pre-lockdown subsample",
+    "Interview respect to COVID-19 lockdown"
+  ),
+  type  = "dichotomous",
+  code  = list(c(No = 0, Yes = 1), c(Before = 1, After = 0))
+)
+
+subsample_pre_var <- new_vars |> slice(1)
+sub_pre_var_sym   <- subsample_pre_var |> pull(var) |> sym()
+
+interview_pre_var <- new_vars |> slice(2)
+int_pre_var_sym   <- interview_pre_var |> pull(var) |> sym()
+```
+
+
+Las nuevas variables a creadas por tanto son:
+
+```{r new-vars-table}
+new_vars                                |>
+  write_vars_table(style = "rmarkdown") |>
+  as.character()                        |>
+  cat()
+```
+
+
+Tras aplicar estos cambios,
+el número de casos y el rango de fechas de entrevista
+por cada combinación de las nuevas variables es:
+
+```{r descriptives-new-vars, message=FALSE}
+complete_db <- complete_db                               |>
+  as_factor()                                            |>
+  mutate(across(all_of(new_vars |> pull(var)), fct_rev)) |>
+  group_by(!!!syms(new_vars |> pull(var)))
+
+new_vars_freq <- complete_db |> count()
+new_vars_date <- complete_db                          |>
+  summarize(value = range(q0006_date))                |>
+  mutate(date = c("init", "end"))                     |>
+  pivot_wider(names_from = date, values_from = value) |>
+  select(init, end, everything())
+
+new_vars_freq                                          |>
+  full_join(new_vars_date, by = new_vars |> pull(var)) |>
+  pandoc.table(style = "rmarkdown")                    |>
+  as.character()                                       |>
+  cat()
+```
+
+
+Los cambios se guardaron en el archivo de BDD de la muestra completa,
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
+
+**en formato Stata 13**.
+
+## Archivos de datos principales afectados
+
+El archivo de la BDD de muestra completa en versión Stata 13
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`
+
+pasó a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/rawdata_c2019w1.dta`
+
+
+El archivo de la submuestra preconfinamiento en versión Stata 13
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata13.dta`
+
+pasó a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_[MIG_DATE]_prelockdown.dta`
+
+donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd (2021-12-13);
+la ruta del archivo por lo tanto es
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/snapshot_`r EXAMPLE_MIG_DATE`_prelockdown.dta`
+
+
+## Cambios en rutas
+
+La subcarpeta con los datos de muestra completa
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa`
+
+junto con todos sus archivos y subcarpetas pasó a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019`
+
+
+La subcarpeta con los datos de submuestra preconfinamiento
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento`
+
+junto con todos sus archivos y subcarpetas pasó a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+
+La subcarpeta con versiones históricas de las BBDD,
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Antiguas`
+
+
+junto con todos sus archivos y subcarpetas pasó a ser
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+Es decir, en esta nueva ruta se han incluido todas las versiones históricas
+de las BDD.
+
+
+## Versiones duplicadas de archivos de datos
+
+Se ha borrado el archivo de BDD de la submuestra preconfinamiento en version
+Stata 14:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Submuestra_1_preconfinamiento/Edad con Salud ola 3_cohorte 2019_base completa_Stata14.dta`
+
+(El motivo de este borrado es evitar la duplicidad de datos en varios formatos.)
+
+
+El archivo de BDD de muestra completa en version SPSS:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.sav`
+
+ha pasado a estar en la ruta
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history/PES16028242_MN_Final20210602.sav`
+
+
+## Dependencias
+
+### Carpetas y archivos de datasets de variables outcome
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome datasets`
+
+y todas las subcarpetas y documentos contenidos en ella han pasado a estar en
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets`
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Submuestra_1_preconfinamiento/Outcome datasets`
+
+ha pasado a ser
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+Todos los archivos contenidos en esa carpeta se han movido a la nueva ruta.
+
+Los archivos con los datasets de las variables outcome de muestra completa
+se deben actualizar para incluir las dos nuevas variables.
+
+
+### Carpetas y archivos de documentación de variables outcome
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome descriptions`
+
+y todas las subcarpetas y documentos contenidos en ella han pasado a estar en
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions`
+
+La ruta
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Submuestra_1_preconfinamiento/Outcome descriptions`
+
+ha pasado a ser
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+Todos los archivos contenidos en esa carpeta se han movido a la nueva ruta.
+
+
+### Documentos Rmd para la generación de variables outcome
+
+Todos los documentos Rmarkdown para la generación de outcomes de Cohorte 2019
+Ola 1, muestra completa, necesitan modificar la ruta de lectura del archivo de
+BDD raíz en el chunk `load-data`; hay que cambiar
+
+`use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta"`
+
+por
+
+`use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta"`
+
+En el chunk `save-data` hay que cambiar el comando `keep` para incluir
+las nuevas variables:
+
+`keep ID_ECS q0007a_result proxy ``r new_vars |> pull(var) |> glue_collapse(sep = ' ')`` <variables generadas>`
+
+En este mismo chunk, hay que cambiar el comando `save` para utilizar la nueva
+ruta de almacenamiento de los datasets de las variables outcome,
+así como asegurar que se guarda en versión Stata 13:
+
+`saveold "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/<nombre_archivo>.dta", replace version(13)`
+
+
+### Plantilla Rmd para la generación de variables outcome {#rmd-template}
+
+En la plantilla del paquete `ecs.data` la línea 143
+
+`* use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta"`
+
+se ha cambiado por
+
+`* use "~/UAM/marta.miret@uam.es - Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/rawdata_c2019w1.dta"`
+
+Las antiguas líneas 144 y 145 se han borrado.
+
+La línea 199
+
+`keep ID_ECS q0007a_result proxy <variable(s) generada(s)>`
+
+se ha sustituido por
+
+`keep ID_ECS q0007a_result proxy `r new_vars |> pull(var) |> glue_collapse(sep = ' ')` <variable(s) generada(s)>`
+
+La línea 216
+
+`* save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Submuestra_1_preconfinamiento/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace`
+
+se ha borrado, y la línea 217
+
+`* save "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Muestra completa/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace`
+
+se ha sustituido por
+
+`* saveold "~/UAM/marta.miret@uam.es - Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/Outcome_<variable>_<qualifier>.dta", replace version(13)`
+
+
+## Cambios en credenciales de OneDrive
+
+Se ha revocado completamente el acceso (tanto de lectura como de escritura)
+para todos los perfiles a las siguientes subcarpetas en OneDrive:
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome datasets/history`
+
+- `Documentacion Edad con Salud/Edad con salud - Ola 3/Outcomes/Cohorte 2019/Outcome descriptions/history`
+
+Solamente se ha concedido acceso
+(dejando las credenciales por defecto heredados de las carpetas raíz)
+a los siguientes perfiles:
+
+- Propietarios de las carpetas (marta.miret@uam.es, elvira.lara@uam.es, beatriz.olaya@pssjd.org)
+
+- Responsables designados de mantenimiento de datos (daniel.morillo@inv.uam.es, jesus.sierralaya@inv.uam.es, j.domenech@pssjd.org)
