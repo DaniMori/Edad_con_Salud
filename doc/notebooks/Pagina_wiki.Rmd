@@ -114,7 +114,7 @@ Meses después se reanudó el trabajo de campo, completándose las entrevistas y
 recogida de datos de los participantes faltantes hasta completar
 el tamaño muestral necesario.
 Como resultado, se obtuvo una BDD
-con el total de los casos que conforman la muestra de la Cohorte 2019.
+con el total de los casos que conforman la muestra de la Cohorte 2019 .
 Por otro lado, es importante también recalcar que, en esta muestra completa,
 **hay casos de participantes que fueron entrevistados antes del 14 de marzo de 2020**
 pero que NO se habían procesado y volcado en la BDD
