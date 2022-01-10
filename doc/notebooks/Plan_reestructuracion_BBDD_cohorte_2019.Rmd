@@ -137,9 +137,11 @@ HISTORY_SUBDIR <- "history"
 # (If executing in testing mode, perform the changes in the backup files)
 DB_MIGR_DIR  <- if (IS_TEST) DB_BACKUP_DIR   else C2019W1_DIR
 
-COMPLETE_DB_DIR_OUT  <- file.path(DB_MIGR_DIR, COMPLETE_SAMPLE_SUBDIR)
-COMPLETE_DB_FILE_OUT <- file.path(COMPLETE_DB_DIR_OUT, COMPLETE_DB_FILENAME)
-COMPLETE_DB_FILE_OLD <- file.path(DB_MIGR_DIR, COMPLETE_DB_FILENAME_OLD)
+COMPLETE_DB_DIR_OUT      <- file.path(DB_MIGR_DIR, COMPLETE_SAMPLE_SUBDIR)
+COMPLETE_DB_FILE_OUT     <- file.path(COMPLETE_DB_DIR_OUT, COMPLETE_DB_FILENAME)
+COMPLETE_DB_FILENAME_BAK <- glue("snapshot_{MIG_DATE}_complete.dta")
+COMPLETE_DB_FILE_OUT_BAK <- file.path(DB_MIGR_DIR, COMPLETE_DB_FILENAME_BAK)
+COMPLETE_DB_FILE_OLD     <- file.path(DB_MIGR_DIR, COMPLETE_DB_FILENAME_OLD)
 
 PRECOVID_DB_DIR_OUT      <- file.path(DB_MIGR_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
 PRECOVID_DB_FILE_OUT     <- file.path(PRECOVID_DB_DIR_OUT, PRECOVID_DB_FILENAME)
@@ -155,10 +157,15 @@ COMPLETE_DB_FILE_NEW   <- file.path(COMPLETE_DB_DIR_OUT, MASTER_DB_FILENAME_NEW)
 HISTORY_OLD_DIR    <- file.path(DB_MIGR_DIR, HISTORY_OLD_SUBDIR)
 HISTORY_DB_DIR_OUT <- file.path(DB_MIGR_DIR, HISTORY_SUBDIR)
 
+
 COMPLETE_DB_FILE_BAK <- file.path(HISTORY_DB_DIR_OUT, COMPLETE_DB_FILENAME_OLD)
 
 PRECOVID_DB_FILE_OLD <- file.path(HISTORY_DB_DIR_OUT, PRECOVID_DB_FILENAME_OLD)
 
+COMPLETE_DB_FILE_OUT_HIST <- file.path(
+  HISTORY_DB_DIR_OUT,
+  COMPLETE_DB_FILENAME_BAK
+)
 
 ### Documentation files:
 
@@ -365,13 +372,13 @@ el número de casos y el rango de fechas de entrevista
 por cada combinación de las nuevas variables es:
 
 ```{r descriptives-new-vars, message=FALSE}
-complete_db <- complete_db |>
+complete_db_output <- complete_db |>
   as_factor() |>
   mutate(across(all_of(new_vars |> pull(var)), fct_rev)) |>
   group_by(!!!syms(new_vars |> pull(var)))
 
-new_vars_freq <- complete_db |> count()
-new_vars_date <- complete_db |>
+new_vars_freq <- complete_db_output |> count()
+new_vars_date <- complete_db_output |>
   summarize(value = range(q0006_date)) |>
   mutate(date = c("init", "end")) |>
   pivot_wider(names_from = date, values_from = value) |>
@@ -384,9 +391,30 @@ Los cambios se guardan en el archivo de BDD de la muestra completa,
 
 - `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/PES16028242_MN_Final20210602.dta`,
 
-**en formato Stata 13**.
+**en formato Stata 13**, previa copia de seguridad del archivo original en
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/snapshot_[MIG_DATE]_complete.dta`,
+
+donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd;
+por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
+la ruta será
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/snapshot_`r EXAMPLE_MIG_DATE`_complete.dta`
+
 
 ```{r update-db, eval=FALSE}
+# Pre-COVID DB file:
+result <- file.rename(COMPLETE_DB_FILE_OUT, COMPLETE_DB_FILE_OUT_BAK)
+if (!result) {
+
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OUT, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_OUT_BAK, CODE_DELIM
+  )
+}
+
 complete_db |> write_dta(path = COMPLETE_DB_FILE_OUT, version = 13)
 ```
 
@@ -549,7 +577,19 @@ pasa a estar en la ruta
 ```{r process-duplicated-versions, eval=FALSE}
 unlink(PRECOVID_DB_FILE_OLD) # Delete Stata 14 version
 
-# Back-up to `history` SPSS versions
+# Back-up to `history` Stata version
+result <- file.rename(COMPLETE_DB_FILE_OUT_BAK, COMPLETE_DB_FILE_OUT_HIST)
+if (!result) {
+  
+  cat(
+    MOVE_FOLDER_ERROR,
+    CODE_DELIM, COMPLETE_DB_FILE_OLD, CODE_DELIM,
+    BY_,
+    CODE_DELIM, COMPLETE_DB_FILE_BAK, CODE_DELIM
+  )
+}
+
+# Back-up to `history` SPSS version
 result <- file.rename(COMPLETE_DB_FILE_OLD, COMPLETE_DB_FILE_BAK)
 if (!result) {
   
@@ -838,6 +878,17 @@ if (!result) cat(CREATE_FOLDER_ERROR, CODE_DELIM, DOC_BACKUP_DIR, CODE_DELIM)
 
 
 ## Actualización de la BDD de muestra completa
+
+Se hace el backup de la BDD de muestra completa en el archivo
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/snapshot_[MIG_DATE]_complete.dta`,
+
+donde `[MIG_DATE]` es la fecha de migración en formato YYYY-mm-dd;
+por ejemplo, si la migración se lleva a cabo el `r ex_mig_date_printed`,
+la ruta será
+
+- `Bases de datos maestras Edad con Salud/Ola_3/Cohorte_2019/Muestra completa/snapshot_`r EXAMPLE_MIG_DATE`_complete.dta`
+
 
 Los cambios en la BDD de muestra completa se guardan
 en el archivo correspondiente, **en formato Stata 13**:
