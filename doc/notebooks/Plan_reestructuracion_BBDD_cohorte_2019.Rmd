@@ -13,7 +13,7 @@ output:
     toc_float: yes
     toc_depth: 4
 params:
-  test: yes
+  test: no
 editor_options: 
   chunk_output_type: console
 ---
@@ -91,8 +91,7 @@ DESCDOCS_SUBDIR           <- "Outcome descriptions"
 
 DB_ROOT_DIR     <- read_ecs_folder("DB")
 C2019W1_SUBDIR  <- "Ola_3/Cohorte_2019"
-# C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
-C2019W1_DIR     <- DB_BACKUP_DIR ## TODO: Restore
+C2019W1_DIR     <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
 COMPLETE_DB_DIR <- file.path(C2019W1_DIR, COMPLETE_SAMPLE_SUBDIR)
 PRECOVID_DB_DIR <- file.path(C2019W1_DIR, PRECOVID_SUBSAMPLE_SUBDIR)
 
@@ -114,8 +113,7 @@ PRECOVID_DB_FILE <- file.path(PRECOVID_DB_DIR, PRECOVID_DB_FILENAME)
 
 DOC_ROOT_DIR    <- read_ecs_folder("DOC")
 OUTCOMES_SUBDIR <- "Edad con salud - Ola 3/Outcomes/Cohorte 2019"
-# OUTCOMES_DIR    <- file.path(DOC_ROOT_DIR, OUTCOMES_SUBDIR)
-OUTCOMES_DIR    <- DOC_BACKUP_DIR ## TODO: Restore
+OUTCOMES_DIR    <- file.path(DOC_ROOT_DIR, OUTCOMES_SUBDIR)
 
 COMPLETE_DATASETS_SUBDIR <- file.path(COMPLETE_SAMPLE_SUBDIR, DATASETS_SUBDIR)
 COMPLETE_DESCDOCS_SUBDIR <- file.path(COMPLETE_SAMPLE_SUBDIR, DESCDOCS_SUBDIR)
@@ -851,16 +849,12 @@ Se copian en primer lugar las estructuras de archivos completas que se van a
 modificar, con objeto de tener una copia de seguridad en caso de que
 sea necesario revertir los cambios.
 
-```{r reset-backup, include=FALSE, eval=FALSE}
-## TODO: Quitar `eval=FALSE`
-
+```{r reset-backup, include=FALSE}
 # Delete migration backup files (if necessary) from previous tests
 unlink(BACKUP_DIR, recursive = TRUE)
 ```
 
-```{r create-backup, eval=FALSE}
-## TODO: Quitar `eval=FALSE`
-
+```{r create-backup}
 # DB files:
 dir.create(DB_BACKUP_DIR, recursive = TRUE, showWarnings = FALSE)
 result <- file.copy(
