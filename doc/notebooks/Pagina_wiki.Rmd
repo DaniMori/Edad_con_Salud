@@ -31,7 +31,7 @@ print_date <- stamp(
 
 LOCKDOWN_DATE    <- dmy("14-03-2020")
 EXAMPLE_MIG_DATE <- dmy("15-11-2021")
-MIG_DATE         <- dmy("13-12-2021")
+MIG_DATE         <- dmy("12-01-2022")
 
 ld_date_printed     <- print_date(LOCKDOWN_DATE)
 mig_date_printed    <- print_date(MIG_DATE)
