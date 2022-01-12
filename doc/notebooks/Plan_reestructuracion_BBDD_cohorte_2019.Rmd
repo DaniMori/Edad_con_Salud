@@ -44,7 +44,7 @@ IS_TEST <- params$test
 
 LOCKDOWN_DATE    <- dmy("14-03-2020")
 EXAMPLE_MIG_DATE <- dmy("15-11-2021")
-MIG_DATE         <- dmy("13-12-2021")
+MIG_DATE         <- dmy("12-01-2022")
 MIG_TIME         <- hm("9:30")
 
 ld_date_printed     <- print_date(LOCKDOWN_DATE)
