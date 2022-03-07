@@ -1,0 +1,316 @@
+---
+title: |
+  "Corrección de variables de tiempo ('timestamp' y 'duración') en la
+  base de datos de Cohorte 2019 ola 1"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+    df_print: paged
+    code_folding: show
+    code_download: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+params:
+  test: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+if (!require(pacman)) install.packages("pacman")
+library(pacman)
+
+p_load(knitr, ecs.data, tidyverse, lubridate, readr, haven, glue, rlang)
+
+opts_chunk$set(echo = TRUE, results = 'asis')
+```
+
+```{r functions, include=FALSE}
+print_date <- stamp(
+  "01/01/1960",
+  orders = "dmy",
+  locale = "Spanish_Spain.1252"
+)
+# print_time <- stamp("00:00", orders = "HM")
+```
+
+```{r constants, include=FALSE}
+# Execution configuration: ----
+IS_TEST <- params$test
+
+# Data values and variables objects: ----
+
+STATA_VERSION <- 13L
+
+## Date and time objects:
+
+SEC_24H          <- 60L * 60L * 24L
+DEFAULT_DATE     <- dmy("01-01-1960")
+default_date_out <- print_date(DEFAULT_DATE)
+
+DATE_CHANGE <- today()
+
+# File system objects: ----
+
+## Current file structure:
+
+### Folders:
+
+DB_ROOT_DIR    <- read_ecs_folder("DB")
+C2019W1_SUBDIR <- "Ola_3/Cohorte_2019"
+C2011W3_SUBDIR <- "Ola_3/Cohorte_2011/FINAL"
+HISTORY_SUBDIR <- "history"
+C2019W1_DIR    <- file.path(DB_ROOT_DIR, C2019W1_SUBDIR)
+C2011W3_DIR    <- file.path(DB_ROOT_DIR, C2011W3_SUBDIR)
+HISTORY_DIR    <- file.path(C2019W1_DIR, HISTORY_SUBDIR)
+
+### Files:
+
+C2019W1_FILENAME      <- "rawdata_c2019w1.dta"
+C2011W3_FILENAME      <-
+  "20190208_PES16028242_Seguimiento_final_completo_V6 (stata13).dta"
+C2019W1_BAK_FILENAME  <- "snapshot_{DATE_CHANGE}.dta" |> glue()
+C2019W1_PREV_FILENAME <- "snapshot_2022-01-12_complete.dta"
+C2019W1_SPSS_FILENAME <- "PES16028242_MN_Final20210602.sav"
+
+### File paths:
+
+C2019W1_FILEPATH      <- file.path(C2019W1_DIR, C2019W1_FILENAME)
+C2011W3_FILEPATH      <- file.path(C2011W3_DIR, C2011W3_FILENAME)
+C2019W1_BAK_FILEPATH  <- file.path(HISTORY_DIR, C2019W1_BAK_FILENAME)
+C2019W1_PREV_FILEPATH <- file.path(HISTORY_DIR, C2019W1_PREV_FILENAME)
+C2019W1_SPSS_FILENAME <- file.path(HISTORY_DIR, C2019W1_SPSS_FILENAME)
+
+C2019W1_NEW_FILEPATH <- if (IS_TEST) "test.dta" else C2019W1_FILEPATH
+```
+
+# Resumen
+
+La BDD de Edad con Salud de Cohorte 2019, Ola 1, se ha pasado automáticamente a
+formato Stata utilizando R.
+Esta BDD contiene errores en las variables de hora y tiempo.
+Se debe a que Stata no tiene un formato de hora como tal,
+por lo que se almacenan como variables de fecha, con una "fecha por defecto"
+(`r default_date_out`),
+por lo que se han almacenado como valores numéricos (punto flotante)
+en su lugar.
+Este script actualiza esos valores para convertirlos en el formato de "fecha"
+que aparece en el resto de BBDD.
+
+# Descripción de la situación actual
+
+La bases de datos de cohorte 2019, ola 1
+contiene errores en las variables de hora y tiempo.
+Estos errores han sido identificados por Blanca, y parecen deberse a que
+esas variables contienen valores numéricos en lugar de valores de
+marca temporal y/o duración.
+
+Las variables afectadas, identificadas por Blanca, son:
+
+```{r affected-vars}
+PERIOD_VARS <- c(
+  "q7013_time", "q7014_time",
+  "q7026", "q7027", "q7066", "q7067", "q7111", "q7112"
+)
+TIMESTAMP_VARS <- quo(matches("_time_"))
+```
+
+## Comprobaciones
+
+En primer lugar compruebo los valores de estas variables.
+Abro el archivo correspondiente para explorar sus valores,
+y selecciono las variables afectadas:
+
+```{r explore-vars}
+dataset_c2019w1 <- C2019W1_FILEPATH |> read_dta()
+
+timevars_stata <- dataset_c2019w1 |>
+  select(all_of(PERIOD_VARS), !!TIMESTAMP_VARS)
+
+timevars_stata |> head()
+```
+
+Los valores parecen ser numéricos (en punto flotante).
+Para explorar a qué se pude deber el error,
+revisamos igualmente los valores en otros archivos de datos:
+
+- Versión anterior de este mismo archivo.
+
+- Versión de este mismo archivo en SPSS.
+
+- Otro archivos de datos (en este caso, Cohorte 2011, Ola 3)
+
+
+```{r explore-vars-alternative-datasets}
+timevars_bak <- C2019W1_PREV_FILEPATH |>
+  read_dta()                          |>
+  select(all_of(PERIOD_VARS), !!TIMESTAMP_VARS)
+
+timevars_spss <- C2019W1_SPSS_FILENAME |>
+  read_spss()                          |>
+  select(all_of(PERIOD_VARS), !!TIMESTAMP_VARS)
+
+timevars_c2011w3 <- C2011W3_FILEPATH |>
+  read_stata()                       |>
+  select(all_of(PERIOD_VARS |> paste0('_s2')), !!TIMESTAMP_VARS)
+
+timevars_bak     |> head()
+timevars_spss    |> head()
+timevars_c2011w3 |> head()
+```
+
+Comparando con esos archivos, vemos que:
+
+- Los valores numéricos ya se encontraban en la versión anterior del archivo.
+
+- Los valores en SPSS sí tienen valores correctos en formato "time".
+
+- Los valores en otros archivos de Stata tienene valores de tipo "fecha-hora"
+  ("date-time") en lugar de "time".
+
+Esto parece dar a entender que los valores de tipo "time" no se pueden almacenar
+como tal en Stata, y en su lugar hay que almacenarlos como valores de
+"date-time".
+Todos estos valores parecen tener una "fecha por defecto" de
+`r default_date_out`.
+Hacemos la comprobación en el archivo de C2011_W3:
+
+```{r explore-date-values}
+date_counts <- timevars_c2011w3  |>
+  select(-where(is.labelled))    |>
+  mutate(across(.fns = as_date)) |>
+  count(across(everything()))
+
+date_counts
+```
+
+Parece que no se cumple que todos los valores de fecha sean de 01/01/1960.
+Exploro los valores diferentes:
+
+```{r explore-nondefault-dates}
+nondefault_date_count <- date_counts |>
+rownames_to_column("row")            |>
+  pivot_longer(-c(row, n))           |>
+  filter(value != DEFAULT_DATE)      |>
+  arrange(name)                      |>
+  count(name, value, name = "n", wt = n)
+
+nondefault_date_count
+
+nondefault_date_vars <- nondefault_date_count |>
+  distinct(name)                              |>
+  pull(name)
+
+nondefault_date_vars_out <- nondefault_date_vars |>
+  backtick()                                     |>
+  glue_collapse(sep = " and ")
+
+nondefault_date_count_total <- nondefault_date_count |> count(wt = n) |> pull(n)
+```
+
+Las únicas variables que contienen valores diferentes son
+`r nondefault_date_vars_out`, con un total de `r nondefault_date_count_total`
+únicamente.
+Se puede deber a que esas variables de tiempo o duración pueden ser superiores
+a 24 horas.
+Para comprobarlo, miramos la interpretación de esas variables.
+
+```{r explore-nondefault-dates-variables}
+timevars_c2011w3                       |>
+  select(all_of(nondefault_date_vars)) |>
+  map_chr(attr, "label")               |>
+  enframe()
+```
+
+En vista de las etiquetas de las variables, parece plausible que pueda haber
+valores superiores a 24 horas (aunque sean atípicos).
+
+## Conclusiones
+
+Partimos del supuesto de que estas variables se almacenan como "date-time",
+con fechas por defecto de 01/01/1960.
+Cuando los valores de duración sean superiores a 24 horas,
+es necesario comprobar al almacenarlos que se traducen en los cambios
+correspondientes en esas fechas.
+Para ello comprobamos en primer lugar si hay valores que cumplen esa condición,
+que expresado en segundos supone un valor mayor a `r SEC_24H`.
+
+```{r explore-values-time-vars}
+timevars_stata               |>
+  pivot_longer(everything()) |>
+  filter(value >= SEC_24H)
+```
+
+No parece haber ninguno, al menos en el dataset de C2019_W1,
+por lo que no hay mayor preocupación al respecto.
+
+# Cambios a realizar
+
+## Backup del archivo
+
+En primer lugar hacemos una copia de respaldo del archivo de BDD actual
+al histórico.
+
+```{r backup-dataset, eval=!IS_TEST}
+dataset_c2019w1 |> write_dta(C2019W1_BAK_FILEPATH, version = STATA_VERSION)
+```
+
+## Comprobación de variables
+
+Comprobamos primero si los valores coinciden con los del archivo de SPSS.
+
+```{r}
+update_timevars <- dataset_c2019w1              |>
+  select(all_of(PERIOD_VARS), !!TIMESTAMP_VARS) |>
+  pivot_longer(
+    cols      = everything(),
+    names_to  = "name_stata",
+    values_to = "values_stata")
+
+timevars_eq <- timevars_spss               |>
+  mutate(across(everything(), as.numeric)) |>
+  pivot_longer(
+    cols      = everything(),
+    names_to  = "name_spss",
+    values_to = "values_spss"
+  )                                        |>
+  bind_cols(update_timevars)               |>
+  mutate(eq = values_spss == values_stata)
+
+timevars_eq |> count(eq)
+timevars_eq                                                 |>
+  mutate(na_eq = is.na(values_spss) == is.na(values_stata)) |>
+  count(na_eq)
+```
+
+Los valores no perdidos coinciden, y también coincide que hay perdidos en los
+mismos casos.
+Por lo tanto se verifica que los valores son equivalentes.
+
+## Actualización de variables
+
+Usando la "fecha por defecto" como origen, se convierten al tipo de dato
+utilizado por Stata (POSIX-long time).
+También es necesario utilizar "coordenadas universales de tiempo" para evitar
+que la configuración local del ordenador convierta las horas en función de la
+zona horaria configurada.
+Se utiliza para ello la zona horaria estándar o "GMT".
+
+```{r update-values}
+dataset_updated <- dataset_c2019w1 |> mutate(
+  across(
+    c(all_of(PERIOD_VARS), !!TIMESTAMP_VARS),
+    as.POSIXlt, origin = DEFAULT_DATE, tz = "GMT"
+  )
+)
+```
+
+## Escritura del nuevo archivo de datos
+
+```{r write-updated-dataset}
+dataset_updated |> write_dta(C2019W1_NEW_FILEPATH, version = STATA_VERSION)
+```
