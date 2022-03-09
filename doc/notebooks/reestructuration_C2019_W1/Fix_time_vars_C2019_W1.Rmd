@@ -8,7 +8,7 @@ output:
     toc_float: yes
     toc_depth: 4
     df_print: paged
-    code_folding: show
+    code_folding: hide
     code_download: yes
   html_notebook:
     toc: yes
@@ -35,10 +35,9 @@ print_date <- stamp(
   orders = "dmy",
   locale = "Spanish_Spain.1252"
 )
-# print_time <- stamp("00:00", orders = "HM")
 ```
 
-```{r constants, include=FALSE}
+```{r constants}
 # Execution configuration: ----
 IS_TEST <- params$test
 
@@ -116,7 +115,7 @@ PERIOD_VARS <- c(
   "q7013_time", "q7014_time",
   "q7026", "q7027", "q7066", "q7067", "q7111", "q7112"
 )
-TIMESTAMP_VARS <- quo(matches("_time_"))
+TIMESTAMP_VARS <- quo(matches("time_"))
 ```
 
 ## Comprobaciones
@@ -263,7 +262,7 @@ dataset_c2019w1 |> write_dta(C2019W1_BAK_FILEPATH, version = STATA_VERSION)
 
 Comprobamos primero si los valores coinciden con los del archivo de SPSS.
 
-```{r}
+```{r check-coincidence}
 update_timevars <- dataset_c2019w1              |>
   select(all_of(PERIOD_VARS), !!TIMESTAMP_VARS) |>
   pivot_longer(
@@ -271,6 +270,8 @@ update_timevars <- dataset_c2019w1              |>
     names_to  = "name_stata",
     values_to = "values_stata")
 
+# In SPSS the origin is "01/01/1970" instead of 1960, so it's better to compare
+#   them in numeric format.
 timevars_eq <- timevars_spss               |>
   mutate(across(everything(), as.numeric)) |>
   pivot_longer(
