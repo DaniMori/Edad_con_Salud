@@ -15,7 +15,7 @@ output:
     toc_float: yes
     toc_depth: 4
 params:
-  test: yes
+  test: no
 editor_options: 
   chunk_output_type: console
 ---
