@@ -1,7 +1,7 @@
 ---
 title: |
-  "Corrección de variables de tiempo ('timestamp' y 'duración') en la
-  base de datos de Cohorte 2019 ola 1"
+  Corrección de variables de tiempo ('timestamp' y 'duración') en la
+  base de datos de Cohorte 2019 ola 1
 output:
   html_document:
     toc: yes
