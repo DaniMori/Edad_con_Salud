@@ -4,7 +4,7 @@ title: |
   base de datos de Cohorte 2011 ola 2
 output: github_document
 params:
-  test: yes
+  test: no
 editor_options: 
   chunk_output_type: console
 ---
