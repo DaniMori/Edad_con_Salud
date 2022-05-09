@@ -168,7 +168,25 @@ En primer lugar hacemos una copia de respaldo del archivo de BDD actual
 al histórico.
 
 ```{r backup-dataset, eval=!IS_TEST}
-dataset_c2011w2 |> write_dta(C2011W2_BAK_FILEPATH, version = STATA_VERSION)
+# Complete sample DB files:
+result <- file.copy(
+  C2011W2_FILEPATH,
+  C2011W2_BAK_FILEPATH,
+  copy.date = TRUE
+)
+if (!result) {
+  
+  cat(
+    "Error moving file:\n",
+    C2011W2_FILEPATH,
+    "\n\nto path:\n",
+    C2011W2_BAK_FILEPATH
+  )
+  
+} else {
+  
+  file.remove(C2011W2_FILEPATH)
+}
 ```
 
 ## Comprobación de variables
