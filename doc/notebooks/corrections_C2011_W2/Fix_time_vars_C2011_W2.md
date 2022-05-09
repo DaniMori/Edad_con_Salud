@@ -1,0 +1,231 @@
+Corrección de variables de tiempo (‘timestamp’ y ‘duración’) en la base
+de datos de Cohorte 2011 ola 2
+
+================
+
+``` r
+# Execution configuration: ----
+IS_TEST <- params$test
+
+# Data values and variables objects: ----
+
+STATA_VERSION <- 13L
+
+## Date and time objects:
+
+SEC_24H          <- 60L * 60L * 24L
+DEFAULT_DATE     <- dmy("01-01-1960")
+default_date_out <- print_date(DEFAULT_DATE)
+
+DATE_CHANGE <- today()
+
+# File system objects: ----
+
+## Current file structure:
+
+### Folders:
+
+DB_ROOT_DIR     <- read_ecs_folder("DB")
+C2011W2_SUBDIR  <- "Ola_2"
+HISTORY_SUBDIR  <- "history"
+C2011W2_DIR     <- file.path(DB_ROOT_DIR, C2011W2_SUBDIR)
+HISTORY_DIR     <- file.path(C2011W2_DIR, HISTORY_SUBDIR)
+C2011W2_NEW_DIR <- if (IS_TEST) "." else C2011W2_DIR
+
+### Files:
+
+C2011W2_FILENAME      <- "20150916 Database COURAGE wave 1.dta"
+C2011W2_BAK_FILENAME  <- "snapshot_{DATE_CHANGE}.dta" |> glue()
+C2011W2_NEW_FILENAME  <- "rawdata_c2011w2.dta"
+C2011W2_SPSS_FILENAME <- "DATABASE COURAGE Wave_1_16_09_2015 (1).sav"
+
+### File paths:
+
+C2011W2_FILEPATH      <- file.path(C2011W2_DIR,     C2011W2_FILENAME)
+C2011W2_BAK_FILEPATH  <- file.path(HISTORY_DIR,     C2011W2_BAK_FILENAME)
+C2011W2_NEW_FILEPATH  <- file.path(C2011W2_NEW_DIR, C2011W2_NEW_FILENAME)
+C2011W2_SPSS_FILEPATH <- file.path(C2011W2_DIR,     C2011W2_SPSS_FILENAME)
+```
+
+# Resumen
+
+La base de datos (BDD) de Edad con Salud de Cohorte 2011, Ola 2, se ha
+pasado automáticamente a formato Stata utilizando R. Esta BDD contiene
+errores en las variables de hora y tiempo. Se debe a que Stata no tiene
+un formato de hora como tal, por lo que se almacenan como variables de
+fecha, con una “fecha por defecto” (01/01/1960), por lo que se han
+almacenado como valores numéricos (punto flotante) en su lugar. Este
+script actualiza esos valores para convertirlos en el formato de “fecha”
+que aparece en el resto de BBDD.
+
+Además, este archivo de BDD está en formato Stata 14/15, por lo que se
+necesita convertirlo a Stata 13, de acuerdo a la convención adoptada
+para el proyecto Edad con Salud.
+
+## Nota aclaratoria
+
+Este documento es una adaptación del [correspondiente de Cohorte 2019
+Ola 1](../reestructuration_C2019_W1/Fix_time_vars_C2019_W1.Rmd)
+
+# Descripción de la situación actual
+
+La BDD de cohorte 2019, ola 2 contiene errores en las variables de hora
+y tiempo. Estos errores han sido identificados por Blanca, y parecen
+deberse a que esas variables contienen valores numéricos en lugar de
+valores de marca temporal y/o duración.
+
+Las variables afectadas que se han identificado son:
+
+``` r
+PERIOD_VARS <- c(
+  "q7013_time", "q7014_time",
+  "q7026", "q7027", "q7066", "q7067", "q7111", "q7112"
+) |>
+  paste0("_s1")
+
+TIMESTAMP_VARS <- quo(matches("time_"))
+
+ALL_TIME_VARS <- quos(all_of(PERIOD_VARS), !!TIMESTAMP_VARS)
+```
+
+# Cambios a realizar
+
+## Lectura de datos
+
+En primer lugar se lee el archivo de datos y se seleccionan las
+variables afectadas:
+
+``` r
+dataset_c2011w2 <- C2011W2_FILEPATH |> read_dta()
+
+timevars_stata <- dataset_c2011w2 |> select(!!!ALL_TIME_VARS)
+```
+
+See leen también las variables del archivo en versión SPSS para poder
+hacer comprobaciones.
+
+``` r
+timevars_spss <- C2011W2_SPSS_FILEPATH |>
+  read_spss()                          |>
+  select(!!!ALL_TIME_VARS)
+```
+
+## Comprobación de datos
+
+Sabemos por el procesado del archivo de datos de Cohorte 2019 Ola 1 que
+hay que hacer comprobaciones especiales para las variables que
+representan más de 24 horas (86400 expresado en segundos), por lo que
+comprobamos si existe algún valor que cumple esa condición:
+
+``` r
+timevars_stata               |>
+  pivot_longer(everything()) |>
+  filter(value >= SEC_24H)
+```
+
+# A tibble: 0 × 2
+
+# … with 2 variables: name <chr>, value \<dbl+lbl\>
+
+No parece haber ninguno en el dataset por lo que no hay mayor
+preocupación al respecto.
+
+## Backup del archivo
+
+En primer lugar hacemos una copia de respaldo del archivo de BDD actual
+al histórico.
+
+``` r
+# Complete sample DB files:
+result <- file.copy(
+  C2011W2_FILEPATH,
+  C2011W2_BAK_FILEPATH,
+  copy.date = TRUE
+)
+if (!result) {
+  
+  cat(
+    "Error moving file:\n",
+    C2011W2_FILEPATH,
+    "\n\nto path:\n",
+    C2011W2_BAK_FILEPATH
+  )
+  
+} else {
+  
+  file.remove(C2011W2_FILEPATH)
+}
+```
+
+\[1\] TRUE
+
+## Comprobación de variables
+
+Comprobamos primero si los valores coinciden con los del archivo de
+SPSS.
+
+``` r
+update_timevars <- timevars_stata |> pivot_longer(
+  cols      = everything(),
+  names_to  = "name_stata",
+  values_to = "values_stata"
+)
+
+# In SPSS the origin is "01/01/1970" instead of 1960, so it's better to compare
+#   them in numeric format.
+timevars_eq <- timevars_spss               |>
+  mutate(across(everything(), as.numeric)) |>
+  pivot_longer(
+    cols      = everything(),
+    names_to  = "name_spss",
+    values_to = "values_spss"
+  )                                        |>
+  bind_cols(update_timevars)               |>
+  mutate(
+    eq     = values_spss == values_stata,
+    na_eq  = is.na(values_spss) == is.na(values_stata),
+    all_eq = eq | na_eq
+  )
+
+timevars_eq |> count(all_eq)
+```
+
+# A tibble: 1 × 2
+
+all_eq n <lgl> <int> 1 TRUE 145214
+
+Los valores no perdidos coinciden, y también coincide que hay perdidos
+en los mismos casos. Por lo tanto se verifica que los valores son
+equivalentes.
+
+## Actualización de variables
+
+Usando la “fecha por defecto” como origen, se convierten al tipo de dato
+utilizado por Stata (POSIX-long time). También es necesario utilizar
+“coordenadas universales de tiempo” para evitar que la configuración
+local del ordenador convierta las horas en función de la zona horaria
+configurada. Se utiliza para ello la zona horaria estándar o “GMT”.
+
+``` r
+timevar_labels <- dataset_c2011w2 |>
+  map(attr, "label")              |>
+  extract(colnames(timevars_stata))
+
+dataset_updated <- dataset_c2011w2 |>
+  mutate(
+    across(c(!!!ALL_TIME_VARS), as.double),
+    across(c(!!!ALL_TIME_VARS), as.POSIXlt, origin = DEFAULT_DATE, tz = "GMT")
+  )                                |>
+  imap_dfc(
+    ~{
+      attr(.x, "label") <- timevar_labels[[.y]]
+      .x
+    }
+  )
+```
+
+## Escritura del nuevo archivo de datos
+
+``` r
+dataset_updated |> write_dta(C2011W2_NEW_FILEPATH, version = STATA_VERSION)
+```
