@@ -1,0 +1,78 @@
+---
+title: Actualización del cuestionario de Cohorte 2011 Ola 4
+output: github_document
+---
+
+# Introducción
+
+Se describe el proceso de actualización del cuestionario de Ola 4 de la Cohorte
+2011 de Edad con Salud.
+Este proceso requiere varios pasos que es necesario realizar manualmente;
+se describen estos pasos a continuación.
+
+# Preparativos
+
+Sincronizar carpeta de documentación del Sharepoint:
+
+https://dauam.sharepoint.com/sites/EdadconSalud/Documentos%20compartidos/Forms/AllItems.aspx
+
+(Click en Sincronizar)
+
+# Actualización del cuestionario
+
+1. Marcar todos los cambios pendientes como resueltos
+   (Revisar -> Desplegable en "Aceptar" -> Aceptar todos los cambios)
+  
+1. Activar control de cambios y/o comprobar que está activo
+
+1. Aplicar correcciones y cambios
+
+1. Desactivar control de cambios
+
+1. En tabla "Información del documento" (p. 146):
+  Cambiar "Fecha de aprobación" por fecha de hoy
+
+1. Actualizar nº de versión (actualmente 2.X, siendo X el valor actual + 1)
+
+1. Actualizar nombre de versión (actualmente "Candidata a implementación Y",
+   siendo Y el valor actual + 1)
+
+1. En tabla "Historial de versiones" añadir nueva fila al final.
+
+1. Rellenar nº versión, nombre de versión, y fecha, en la nueva fila con
+   los valores actualizados de la tabla "Información del docuemnto"
+
+1. Rellenar "Descripción de cambios" con los cambios de la nueva versión
+   (resaltados con control de cambios)
+
+1. Guardar cambios
+
+1. Cerrar documento
+
+1. Cambiar nombre de documento (F2): Cambiar fecha, nº de versión,
+   y nombre de versión
+
+1. Abrir documento
+
+1. Desactivar visualización de cambios
+   (Revisar -> Desplegable "Mostrar para revisión" -> "Ninguna revisión")
+
+1. Guardar como PDF:
+   `UAM/Edad con Salud - Documentos/Cuestionarios/Cohorte_2011/Ola_4/history/<nombre_doc>.pdf`
+
+1. Guardar y cerrar documento
+
+1. Copiar documento a subcarpeta "Versiones antiguas"
+
+1. Copiar documento PDF:
+   `UAM/Edad con Salud - Documentos/Cuestionarios/Cohorte_2011/Ola_4/history/<nombre_doc>.pdf`
+   a la siguiente carpeta:
+   `UAM/Edad con Salud - Documentos/Cuestionarios/Cohorte_2011/Ola_4/<nombre_doc>.pdf`
+
+1. Borrar documento:
+   `UAM/Edad con Salud - Documentos/Cuestionarios/Cohorte_2011/Ola_4/Cuestionario_ola_4_EDAD_CON_SALUD.pdf`
+
+1. Renombrar documento:
+   `UAM/Edad con Salud - Documentos/Cuestionarios/Cohorte_2011/Ola_4/<nombre_doc>.pdf`
+   por
+   `UAM/Edad con Salud - Documentos/Cuestionarios/Cohorte_2011/Ola_4/Cuestionario_ola_4_EDAD_CON_SALUD.pdf`
