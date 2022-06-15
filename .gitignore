@@ -31,6 +31,9 @@ vignettes/*.pdf
 *_cache/
 /cache/
 
+# knitr and R markdown additional file output directories
+*_files/
+
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md

@@ -1,0 +1,107 @@
+---
+title: "Prueba entrenamientos"
+author: "Daniel Morillo"
+format: html
+execute: 
+  cache: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r includes, include=FALSE}
+library(haven)
+library(tidyverse)
+library(magrittr)
+```
+
+
+# Intro
+
+Queremos extraer casos específicos de la BDD de c2011_w3 que permitan testear
+diferentes condiciones de salud crónicas en la sección 4000.
+
+# Carga y preprocesado de datos
+
+Leo los datos y conservo solamente las variables que interesan,
+las de condiciones crónicas, el ID y el sexo:
+
+```{r load-data}
+DB_PATH <- file.path(
+  "~/../UAM",
+  "marta.miret@uam.es - Bases de datos maestras Edad con Salud",
+  "Ola_3/Cohorte_2011/FINAL",
+  "20190208_PES16028242_Seguimiento_final_completo_V6 (stata13).dta"
+)
+
+db_raw <- read_stata(DB_PATH)
+
+chronic_main_vars <- tribble(
+  ~condition,      ~preffix, ~critical,
+  "arthritis",     "q4001_",  FALSE,
+  "ictus",         "q4010_",  FALSE,
+  "angina",        "q4014_",  TRUE,
+  "diabetes",      "q4022_",  FALSE,
+  "epoc",          "q4025_",  TRUE,
+  "asthma",        "q4033_",  TRUE,
+  "depression",    "q4200_",  TRUE,
+  "hypertension",  "q4060_",  FALSE,
+  "cataracts",     "q4064_",  TRUE,
+  "oral",          "q4066_",  FALSE,
+  "cervix_breast", "q4078_",  TRUE,
+  "menopause",     "q4081_",  TRUE,
+  "kidney",        "q4085_",  FALSE,
+  "digestive",     "q4087_",  FALSE,
+  "cancer",        "q4089_",  TRUE,
+  "liver",         "q4091_",  FALSE,
+  "ostheoporosis", "q4093_",  FALSE,
+  "anemia",        "q4095_",  FALSE,
+  "tyroid",        "q4097_",  FALSE,
+  "glaucoma",      "q4099_",  FALSE,
+  "heart",         "q4101_",  FALSE,
+  "incontinence",  "q4104_",  FALSE,
+  "dementia",      "q4105_",  FALSE,
+  "falls",         "q4107_",  FALSE,
+  "lumbalgia",     "q4112_",  FALSE,
+  "migraine",      "q4119_",  FALSE,
+  "other",         "q4114_",  FALSE
+)
+
+critical_preffixes <- chronic_main_vars |>
+  filter(critical) |>
+  pull(preffix)
+
+depression_preffix <- chronic_main_vars |>
+  filter(condition == "depression") |>
+  pull(preffix)
+
+# Select only chronic condition items
+db_chronic <- db_raw |>
+  select(ID_ECS, q0011_s2, q1009_sex, starts_with(critical_preffixes))
+```
+
+Selecciono candidatos de entre los que tienen al menos alguna condición crónica
+(de las consideradas de interés) Y tienen depresión:
+
+```{r subset-candidates}
+candidates <- db_chronic |>
+  mutate(across(starts_with(critical_preffixes), equals, 1)) |>
+  rowwise() |>
+  mutate(
+    n_crit = c_across(starts_with(critical_preffixes)) |> sum(na.rm = TRUE)
+  ) |>
+  filter(n_crit > 0) |> # Select the ones with at least one chronic condition
+  arrange(desc(n_crit)) |>
+  filter(if_any(starts_with(depression_preffix)))
+```
+
+Elijo los primeros resultados (mayor nº de condiciones crónicas críticas),
+uno de cada sexo, y normal/proxy:
+
+```{r choose-candidates}
+candidates |>
+  group_by(q0011_s2, q1009_sex) |>
+  slice(1) |>
+  select(q0011_s2, q1009_sex, ID_ECS)
+```
+
+
