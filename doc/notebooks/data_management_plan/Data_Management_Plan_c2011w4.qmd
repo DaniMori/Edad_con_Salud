@@ -1,0 +1,26 @@
+---
+title: "Data Management Plan"
+author: "Daniel Morillo"
+format: docx
+---
+
+# Introduction
+
+This document introduces a provisional data management plan for Edad con Salud.
+The intention is to implement this plan in the newly created datasets for the
+"4th wave" of the original sample, so-called "2011 Cohort".
+
+# General description
+
+The aims of this plan are
+
+1. Describe the current data storage structure
+
+1. Propose a more systematic data storage structure, that can be flexible
+   enough to be embedded within the current data structure
+   
+1. Propose a systematic manipulation of the datasets, in order to respect the
+   aforementioned storage structure.
+
+## Current state of the data storage structure
+
