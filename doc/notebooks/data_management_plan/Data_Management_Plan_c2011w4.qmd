@@ -35,3 +35,109 @@ The aims of this plan are
 
 ## Current state of the data storage structure
 
+### Main folders
+
+The project Edad con Salud has the following two main folders:
+
+* `Bases de datos maestras Edad con Salud`: This is the main folder where the
+  raw datasets from the interviews are stored. With only a few exceptions, any
+  other dataset related to the project is NOT storaged in this main folder. We
+  refer to this main folder as the _database folder_.
+  
+* `Documentacion Edad con Salud`: This is the main folder for documentation
+  other than the raw datasets from the interviews. In principle and with few
+  exceptions, most of the generated and additional datasets from the project are
+  stored in this main folder. We refer to this main folder as the _documentation
+  folder_.
+  
+These two folders are stored under the OneDrive storage of user "Marta Miret
+Garcia". Therefore, the complete folder names are
+`Marta Miret Garcia - Bases de datos maestras Edad con Salud` and
+`Marta Miret Garcia - Documentacion Edad con Salud`, for the database and the
+documentation folder, respectively.
+
+Their complete path will depend on the local configuration of each user's
+OneDrive storage on their computer. For a typical user with default
+configuration options in any Windows system, the database folder path will be:
+
+`C:/Users/[USER_ID]/UAM/Marta Miret Garcia - Bases de datos maestras Edad con Salud`
+
+being `[USER_ID]` an identifier related to the local user, assigned directly by
+Windows, base on its user name. Similarly for the documentation folder, the path
+will be:
+
+`C:/Users/[USER_ID]/UAM/Marta Miret Garcia - Documentacion Edad con Salud`
+
+We will use the wildcards `[DB_FOLDER]` (database folder) and `[DOC_FOLDER]`
+(documentation folder) to refer to these two paths in subsequent file and folder
+paths.
+
+### Main folder structures
+
+In general, these two folders have a parallel structure, that identifies
+"Waves" and "Cohorts". Within the database folder, the structure for Cohort
+2011, Wave 4, is `Ola_4/Cohorte 2011`. Within the documentation folder, there is
+a folder for Wave 4, called `Edad con salud - Ola 4`. Within this one, there are
+several folders for different purposes (e.g., `Autopsia verbal` for the verbal
+autopsies) and, within it, a `Cohorte_2011` folder for the Cohort 2011 data
+(as there intends to be another one for the Cohort 2019 data collected in
+the same FIS call, i.e. its Wave 2).
+
+In summary, the two folders of interest for this plan are:
+
+* Interview data folder: `[DB_FOLDER]/Ola_4/Cohorte 2011`
+
+* Verbal autopsy data folder:
+  `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia verbal/Cohorte_2011`
+
+These folder structures are inherited from the history of the Courage project
+and previous waves of the Edad con Salud project, and this partial data
+management plan intends to respect it.
+
+### Other folders
+
+Within the "interview data folder" there is a folder named `Parciales`, which
+stores the (partial) historical versions of the interview dataset. Its path is
+therefore
+
+`[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales`
+
+### Dataset files
+
+#### Interview datasets
+
+Currently, the interview datasets are only partial versions of the final
+interview dataset, each of them reporting cumulative progress on the fieldwork
+with the main interview. These files are stored in folder
+`[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales`, and each has a name with that
+follows the pattern `21057905Parcial1_[YYYYMMDD].dta`, being `[YYYYMMDD]` the
+date in which the file was created (by the field interview provider), with the
+format indicated by the wildcard (being `YYYY` the 4-digit year, and `MM` and
+`DD` two-digit month and day, respectively).
+
+#### Verbal autopsy datasets
+
+Currently, there is only one dataset with a partial version of the final verbal
+autopsy dataset, reporting cumulative progress on the fieldwork with the verbal
+autopsy interviews. Its name is `PESC21057905_AutopsiaVerbal_Parcial1.dta`
+(there does not seem to be any date pattern).
+
+## Proposal of new data storage structure
+
+The following data structure intends to systematize the storage and access of
+the Cohort 2011, Wave 4 dataset files. In order to this, we propose a new
+structure internal to the "main folder structure". In contrast, in order to
+respect the previously inherited structure, the so-called "interview data" and
+"verbal autopsy data" folders will not be modified.
+
+### Internal folder structure
+
+Within each of the two main folders, a new folder named `history` will be
+created to store historical versions of the datasets. Any other folder will not
+be necessary and thus will not be present after the implementation of this plan.
+In this case, folder `[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales` is the only one
+affected.
+
+### Dataset file names
+
+
