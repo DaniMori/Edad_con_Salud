@@ -10,6 +10,17 @@ This document introduces a provisional data management plan for Edad con Salud.
 The intention is to implement this plan in the newly created datasets for the
 "4th wave" of the original sample, so-called "2011 Cohort".
 
+## Scope
+
+This document refers to the following data sources from **Wave 4, Cohort 2011**:
+
+* Raw responses from the field interviews
+
+* Raw responses from the verbal autopsies
+
+The information contained in this document affects only these two data sources.
+No other datasets or data sources are considered here.
+
 # General description
 
 The aims of this plan are
