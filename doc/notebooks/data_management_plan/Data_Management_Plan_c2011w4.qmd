@@ -85,10 +85,14 @@ the same FIS call, i.e. its Wave 2).
 
 In summary, the two folders of interest for this plan are:
 
-* Interview data folder: `[DB_FOLDER]/Ola_4/Cohorte 2011`
+* Interview data folder: `[DB_FOLDER]/Ola_4/Cohorte 2011`. We will use the
+  wildcard `[INTERVIEW_DATA_FOLDER]` to refer to this path in subsequent file
+  and folder paths.
 
 * Verbal autopsy data folder:
-  `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia verbal/Cohorte_2011`
+  `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia verbal/Cohorte_2011`. We will
+  use the wildcard `[VERBAL_AUTOPSY_DATA_FOLDER]` to refer to this path in
+  subsequent file and folder paths.
 
 These folder structures are inherited from the history of the Courage project
 and previous waves of the Edad con Salud project, and this partial data
@@ -138,6 +142,63 @@ be necessary and thus will not be present after the implementation of this plan.
 In this case, folder `[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales` is the only one
 affected.
 
-### Dataset file names
+### Dataset files
 
+#### Characterization
 
+For each of the two datasets (interview and verbal autopsy), two different file
+types will be considered:
+
+- Raw or master dataset: This will refer to the most up-to-date dataset at any
+  time. Any analysis or process to be performed will be done with this dataset.
+  
+- Historical version of the dataset: Previous, outdated datasets will be
+  stored as historical versions of the updated master dataset. The historical
+  datasets will in turn be characterized by being a "partial" version of the
+  dataset, or a complete one. Partial versions refer to the provisional versions
+  that are sent by Ipsos during the fieldwork progress and to not contain the
+  whole sample of cases; these datasets will usually become historical versions
+  when a new, more complete version of the dataset is provided by Ipsos. The
+  complete ones, on the other hand, refer to the final version of the dataset
+  delivered by Ipsos. These will usually be updated only when errors in the data
+  need to be corrected by the research team.
+
+#### File formats
+
+As previously agreed for all datasets in the Edad con Salud project, all datsets
+will be stored in Stata 13 format.
+
+#### File paths
+
+The master datasets will have a path matching the following pattern:
+
+- Master interview dataset: `[INTERVIEW_DATA_FOLDER]/rawdata_c2011w4.dta`
+
+- Master verbal autopsy dataset:
+  `[VERBAL_AUTOPSY_DATA_FOLDER]/rawdata_autopsy_c2011w4.dta`
+
+The historical versions will be stored in their corresponding `history`
+subfolder. The name of the datasets in these cases will depend on whether a file
+is a partial or a complete version. For partial versions, the name will match
+the pattern `snapshot_partial_[YYYY-MM-DD_HH-MM].dta`, while for the complete
+ones, it will match the pattern `snapshot_[YYYY-MM-DD_HH-MM].dta`. That is,
+partial datasets will have the *infix* `partial_`, indicating it is not a
+complete version of the dataset, while the complete ones will have no infix. The
+`[YYYY-MM-DD_HH-mm]` wildcard will be the date in which that historical version
+is archived, with the format indicated: `YYYY` in the year in 4-digit format,
+`MM` the month with two digits, `DD` the day of the month with two digits (both
+with a trailing zero if necessary), `HH` the hour in 24-hour format, and `mm`
+the minutes. Note that the date and time components are separated by an
+*underscore* character (`_`) while the components within the date and within the
+time are separated by *dashes* (`-`).
+
+Below are two examples of (hypotetical) historical dataset file paths, to help
+clarify the meaning of the different patterns:
+
+- Partial version of the verbal autopsy dataset, archived on October 25th 2022
+  at 1:28PM:
+  `[VERBAL_AUTOPSY_DATA_FOLDER]/history/snapshot_partial_2022-10-25_13-28.dta`
+  
+- Complete version of the interview dataset, archived on December 15th 2022,
+  at 3:45PM:
+  `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
