@@ -1,6 +1,6 @@
 ---
-title: 'Revisión del plan de migración de datos C2019-W1 de Edad con Salud'
-date: "17-11-2021"
+title: '<Asunto / motivo de la reunión>'
+date: "<fecha en formato dd-mm-yyyy>"
 output: word_document
 ---
 
