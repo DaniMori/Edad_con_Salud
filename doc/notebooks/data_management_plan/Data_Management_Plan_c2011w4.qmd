@@ -165,8 +165,8 @@ types will be considered:
 
 #### File formats
 
-As previously agreed for all datasets in the Edad con Salud project, all datsets
-will be stored in Stata 13 format.
+As previously agreed for all datasets in the Edad con Salud project, all
+datasets will be stored in Stata 13 format.
 
 #### File paths
 
@@ -202,3 +202,58 @@ clarify the meaning of the different patterns:
 - Complete version of the interview dataset, archived on December 15th 2022,
   at 3:45PM:
   `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
+
+### Additional files
+
+#### Changelog
+
+Each folder will have an additional file with a "changelog", that will keep
+track of the updates made to the corresonding dataset. These files will have the
+format of an Excel book, and their names will be `Changelog_DB_c2011w4.xlsx` and
+`Changelog_autopsy_DB_c2011w4.xlsx`, respectively, for the interview and verbal
+autopsy folder, respectively.
+
+The two files will have the same structure, which will consist of a single
+spreadsheet named "Changelog_c2011w4". This spreadsheet will have the following
+column headers, in the first row (columns A to I):
+
+- `REQUEST DATE`: Date when the change request is made
+
+- `REQUESTER (data provider/any researcher)`: Name of the researcher who
+  requests the change; if the change is due to a new version of the dataset
+  provided by the data provider, it will be filled in with the name of the data
+  provider (i.e., Ipsos) instead.
+
+- `MODIFICATION`: Detailed description of the modification to be performed in
+  the dataset. If the update consists of a new (partial) version of the dataset,
+  provided by the data provider, it will state "Partial/Final dataset update",
+  whichever proceeds.
+
+- `REASON`: The reason for requesting the update. If the update consists of a
+  new, more complete version of the dataset by the data provider, it will state
+  "Field work update".
+
+- `Syntax for modification in dataset (if any)`: This must be the Stata syntax
+  to be performed on the dataset for the change to be applied. Alternatively,
+  when the syntax is more complex, it may be in an external script/notebook in
+  R or other language; in such a case, a link in OneDrive/Sharepoint, accessible
+  to all the researchers, will be filled-in. Finally, if there is no syntax
+  (e.g., because the update implies substituting a partial version of the
+  dataset by a new, more complete one), `NA` will be filled-in.
+
+- `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`: If any of the existing
+  datasets of the outcome variables may be affected by the change, they must be
+  listed here. It is preferrable to err on the _liberal side_, so **in case of
+  doubt about a dataset, it must be listed**. If there are no affected datasets,
+  `NA` will be filled-in.
+
+- `REMARKS (if any)`: Any remarks about this update that don't fit in any
+  of the other fields must be stated here. The more information provided, the
+  better. If there are no remarks, `NA` will be filled-in.
+
+- `IMPLEMENTATION DATE`: Date when the change is implemented and the dataset
+  updated.
+
+- `REVIEWER`: Person in charge of implementing the change and performing the
+  update.
+
