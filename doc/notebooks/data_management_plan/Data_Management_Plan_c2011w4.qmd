@@ -210,8 +210,8 @@ clarify the meaning of the different patterns:
 Each folder will have an additional file with a "changelog", that will keep
 track of the updates made to the corresonding dataset. These files will have the
 format of an Excel book, and their names will be `Changelog_DB_c2011w4.xlsx` and
-`Changelog_autopsy_DB_c2011w4.xlsx`, respectively, for the interview and verbal
-autopsy folder, respectively.
+`Changelog_autopsy_DB_c2011w4.xlsx` for the interview and verbal autopsy folder,
+respectively.
 
 The two files will have the same structure, which will consist of a single
 spreadsheet named "Changelog_c2011w4". This spreadsheet will have the following
@@ -231,7 +231,7 @@ column headers, in the first row (columns A to I):
 
 - `REASON`: The reason for requesting the update. If the update consists of a
   new, more complete version of the dataset by the data provider, it will state
-  "Field work update".
+  "Field work progress".
 
 - `Syntax for modification in dataset (if any)`: This must be the Stata syntax
   to be performed on the dataset for the change to be applied. Alternatively,
