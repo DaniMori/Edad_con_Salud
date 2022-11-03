@@ -1,0 +1,166 @@
+---
+title: "Double coding comparison"
+author: "Daniel Morillo"
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    df-print: kable
+    self-contained: true
+    toc: true
+    toc-location: left
+knitr:
+  opts_chunk:
+    results: 'asis'
+---
+
+```{r packages, message=FALSE}
+library(ecs.data)
+library(haven)
+library(tidyverse)
+library(labelled)
+library(janitor)
+library(knitr)
+```
+
+```{r constant-objects}
+ORG_SUFFIX <- '_org'
+DC_SUFFIX  <- '_dc'
+SUFFIXES   <- c(ORG_SUFFIX, DC_SUFFIX)
+```
+
+
+# Introduction
+
+This document test the comparison of the double coding of an outcome variable
+against its previously proposed version.
+
+The process consists of:
+
+1. The two datasets are matched
+
+2. The matching is tested to see whether it matches every case from both
+   datasets.
+
+3. For the generated variables, it checks whether the two versions agree in the
+   values assigned to the variable.
+
+# Dataset loading
+
+```{r data-paths}
+ECS_DOC_DIR <- read_ecs_folder("DOC")
+
+DATASET_PATH <- file.path(
+  ECS_DOC_DIR,
+  r"(Edad con salud - Ola 3\Outcomes\Cohorte 2011\Outcome datasets)",
+  "Outcome_depression_ICD10.dta"
+) |>
+  normalizePath(winslash = '/')
+
+DC_DATASET_PATH <- "Outcome_Depression_ICD10.dta"
+```
+
+In this case, we are testing the results with the "Depression ICD10" dataset for
+cohort 2011, wave 3.
+We have created a new version for the double coding output in
+_`r DC_DATASET_PATH`_.
+
+We first read both datasets:
+
+```{r read-datasets}
+dataset_org <- read_dta(DATASET_PATH)    |> select(-q0007a_result_s2, -proxy_s2)
+dataset_dc  <- read_dta(DC_DATASET_PATH) |> select(-q0007a_result_s2, -proxy_s2)
+```
+
+# Dataset matching
+
+```{r join-datasets}
+dataset <- full_join(
+  dataset_org, dataset_dc,
+  by     = "ID_ECS",
+  suffix = SUFFIXES
+)
+```
+
+# Matching test
+
+The two individual datasets are tested to see whether there are any unmatched
+rows.
+
+```{r test-matching}
+n_org <- dataset |> anti_join(dataset_org, by = "ID_ECS") |> nrow()
+n_dc  <- dataset |> anti_join(dataset_dc,  by = "ID_ECS") |> nrow()
+
+all_ok <- all(c(n_org, n_dc) == 0)
+
+result <- all_ok |> if_else(
+  "The datasets were correctly matched",
+  "There were unmatched cases; please review output"
+)
+```
+
+* Number of unmatched rows in the original dataset: `r n_org`.
+* Number of unmatched rows in the double coding dataset: `r n_dc`.
+
+**RESULT OF THE MATCHING:**
+`r result`.
+
+# Value matching
+
+The values of the generated variables in the two datasets are compared.
+The "original" values are in the rows of the contingency tables, and the
+"double encoding" ones in the columns.
+
+```{r test-values}
+test_varnames <- dataset                        |>
+  select(ends_with(ORG_SUFFIX))                 |>
+  rename_with(str_remove, pattern = ORG_SUFFIX) |>
+  colnames()                                    |>
+  set_names()
+
+results <- test_varnames |> imap_lgl(
+  ~{
+    org_name  <- paste0(., ORG_SUFFIX)
+    dc_name   <- paste0(., DC_SUFFIX)
+    var_names <- c(org_name, dc_name)
+    
+    test_vars <- dataset |> select(all_of(var_names))
+    
+    label <- dataset |> pull(!!dc_name) |> var_label()
+    
+    cat('\n\n## ', label, '\n\n', sep = '')
+    
+    contingency_table <- test_vars        |>
+      rename(!!sym(.) := !!sym(org_name)) |>
+      tabyl(!!sym(.), !!sym(dc_name))
+    
+    contingency_table |> kable() |> print()
+    
+    cont_matrix       <- as.matrix(contingency_table)[, -1]
+    diag(cont_matrix) <- 0
+    non_matching      <- any(as.logical(cont_matrix))
+    
+    result <- if (non_matching) "There are non-matching values"
+              else              "All the values match"
+    
+    cat("\n\n**RESULT:** ", result, '.\n', sep = '')
+    
+    return(non_matching)
+  }
+)
+```
+
+# Summary of results
+
+The variables with non-matching values are summarized:
+
+```{r summary}
+#| results: markup
+nm_vars <- names(results)[results]
+
+dataset_org               |>
+  select(all_of(nm_vars)) |>
+  map_chr(var_label)      |>
+  enframe(name = "variable", value = "label")
+```
+
