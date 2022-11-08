@@ -8,7 +8,7 @@ format: docx
 
 This document introduces a provisional data management plan for Edad con Salud.
 The intention is to implement this plan in the newly created datasets for the
-"4th wave" of the original sample, so-called "2011 Cohort".
+"4th wave" of the original sample (the so-called "2011 Cohort").
 
 ## Scope
 
@@ -28,14 +28,14 @@ The aims of this plan are
 1. Describe the current data storage structure
 
 1. Propose a more systematic data storage structure, that can be flexible
-   enough to be embedded within the current data structure
+   enough to be embedded within the current one
    
 1. Propose a systematic manipulation of the datasets, in order to respect the
    aforementioned storage structure.
 
-## Current state of the data storage structure
+# Current state of the data storage structure
 
-### Main folders
+## Main folders
 
 The project Edad con Salud has the following two main folders:
 
@@ -56,15 +56,16 @@ Garcia". Therefore, the complete folder names are
 `Marta Miret Garcia - Documentacion Edad con Salud`, for the database and the
 documentation folder, respectively.
 
-Their complete path will depend on the local configuration of each user's
-OneDrive storage on their computer. For a typical user with default
-configuration options in any Windows system, the database folder path will be:
+When synchronized locally, their complete path will depend on the local
+configuration of each user's OneDrive storage on their computer. For a typical
+user with default OneDrive configuration options in any Windows system, the
+database folder path will be:
 
 `C:/Users/[USER_ID]/UAM/Marta Miret Garcia - Bases de datos maestras Edad con Salud`
 
 being `[USER_ID]` an identifier related to the local user, assigned directly by
-Windows, base on its user name. Similarly for the documentation folder, the path
-will be:
+Windows, based on its user name. Similarly for the documentation folder, the
+path will be:
 
 `C:/Users/[USER_ID]/UAM/Marta Miret Garcia - Documentacion Edad con Salud`
 
@@ -72,7 +73,7 @@ We will use the wildcards `[DB_FOLDER]` (database folder) and `[DOC_FOLDER]`
 (documentation folder) to refer to these two paths in subsequent file and folder
 paths.
 
-### Main folder structures
+## Main folder structures
 
 In general, these two folders have a parallel structure, that identifies
 "Waves" and "Cohorts". Within the database folder, the structure for Cohort
@@ -95,20 +96,21 @@ In summary, the two folders of interest for this plan are:
   subsequent file and folder paths.
 
 These folder structures are inherited from the history of the Courage project
-and previous waves of the Edad con Salud project, and this partial data
-management plan intends to respect it.
+and previous waves of the Edad con Salud project. This partial data management
+plan intends to respect these structures, as it will only refer to files and
+folders internal to them.
 
-### Other folders
+## Other folders
 
-Within the "interview data folder" there is a folder named `Parciales`, which
+Within the interview data folder there is a folder named `Parciales`, which
 stores the (partial) historical versions of the interview dataset. Its path is
 therefore
 
 `[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales`
 
-### Dataset files
+## Dataset files
 
-#### Interview datasets
+### Interview datasets
 
 Currently, the interview datasets are only partial versions of the final
 interview dataset, each of them reporting cumulative progress on the fieldwork
@@ -119,14 +121,14 @@ date in which the file was created (by the field interview provider), with the
 format indicated by the wildcard (being `YYYY` the 4-digit year, and `MM` and
 `DD` two-digit month and day, respectively).
 
-#### Verbal autopsy datasets
+### Verbal autopsy datasets
 
 Currently, there is only one dataset with a partial version of the final verbal
 autopsy dataset, reporting cumulative progress on the fieldwork with the verbal
 autopsy interviews. Its name is `PESC21057905_AutopsiaVerbal_Parcial1.dta`
 (there does not seem to be any date pattern).
 
-## Proposal of new data storage structure
+# Proposal of new data storage structure
 
 The following data structure intends to systematize the storage and access of
 the Cohort 2011, Wave 4 dataset files. In order to this, we propose a new
@@ -134,41 +136,43 @@ structure internal to the "main folder structure". In contrast, in order to
 respect the previously inherited structure, the so-called "interview data" and
 "verbal autopsy data" folders will not be modified.
 
-### Internal folder structure
+## Internal folder structure
 
 Within each of the two main folders, a new folder named `history` will be
 created to store historical versions of the datasets. Any other folder will not
 be necessary and thus will not be present after the implementation of this plan.
 In this case, folder `[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales` is the only one
-affected.
+affected (which will be deleted).
 
-### Dataset files
+## Dataset files
 
-#### Characterization
+### Characterization
 
 For each of the two datasets (interview and verbal autopsy), two different file
 types will be considered:
 
 - Raw or master dataset: This will refer to the most up-to-date dataset at any
-  time. Any analysis or process to be performed will be done with this dataset.
+  time. Any analysis or process to be performed will be done with this dataset,
+  save exceptions.
   
 - Historical version of the dataset: Previous, outdated datasets will be
   stored as historical versions of the updated master dataset. The historical
-  datasets will in turn be characterized by being a "partial" version of the
-  dataset, or a complete one. Partial versions refer to the provisional versions
-  that are sent by Ipsos during the fieldwork progress and to not contain the
-  whole sample of cases; these datasets will usually become historical versions
-  when a new, more complete version of the dataset is provided by Ipsos. The
-  complete ones, on the other hand, refer to the final version of the dataset
-  delivered by Ipsos. These will usually be updated only when errors in the data
-  need to be corrected by the research team.
+  datasets will in turn be characterized by being a _partial_ version of the
+  dataset, or a _complete_ one. Partial versions refer to the provisional
+  versions that are sent by the data provider during the fieldwork progress and
+  to not contain the whole sample of cases; these datasets will usually become
+  historical versions when a new, more complete version of the dataset is
+  provided by the data provider. The complete ones, on the other hand, refer to
+  the final version of the dataset delivered by the data provider. These will
+  usually be updated only when errors in the data need to be corrected by the
+  research team.
 
-#### File formats
+### File formats
 
 As previously agreed for all datasets in the Edad con Salud project, all
 datasets will be stored in Stata 13 format.
 
-#### File paths
+### File paths
 
 The master datasets will have a path matching the following pattern:
 
@@ -186,26 +190,27 @@ partial datasets will have the *infix* `partial_`, indicating it is not a
 complete version of the dataset, while the complete ones will have no infix. The
 `[YYYY-MM-DD_HH-mm]` wildcard will be the date in which that historical version
 is archived, with the format indicated: `YYYY` in the year in 4-digit format,
-`MM` the month with two digits, `DD` the day of the month with two digits (both
-with a trailing zero if necessary), `HH` the hour in 24-hour format, and `mm`
-the minutes. Note that the date and time components are separated by an
-*underscore* character (`_`) while the components within the date and within the
-time are separated by *dashes* (`-`).
+`MM` the month with two digits, `DD` the day of the month with two digits (month
+and day both with a trailing zero if necessary), `HH` the hour in 24-hour
+format, and `mm` the minutes. Note that the date and time components are
+separated by an *underscore* character (`_`) while the components within the
+date and within the time are separated by *dashes* (`-`). Additionally, the
+times will be given in _GMT_.
 
 Below are two examples of (hypotetical) historical dataset file paths, to help
 clarify the meaning of the different patterns:
 
 - Partial version of the verbal autopsy dataset, archived on October 25th 2022
-  at 1:28PM:
+  at 2:28PM CEST (= 1:28PM GMT):
   `[VERBAL_AUTOPSY_DATA_FOLDER]/history/snapshot_partial_2022-10-25_13-28.dta`
   
 - Complete version of the interview dataset, archived on December 15th 2022,
-  at 3:45PM:
+  at 5:45PM CET (= 3:45PM GMT):
   `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
 
-### Additional files
+## Additional files
 
-#### Changelog
+### Changelog
 
 Each folder will have an additional file with a "changelog", that will keep
 track of the updates made to the corresonding dataset. These files will have the
