@@ -44,3 +44,6 @@ vignettes/*.pdf
 # .Rmd outputs
 doc/*.html
 doc/*.docx
+
+# Dataset outputs (for test files in some processes)
+*.dta
