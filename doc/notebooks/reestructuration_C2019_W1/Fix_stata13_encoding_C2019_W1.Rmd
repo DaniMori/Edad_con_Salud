@@ -18,28 +18,27 @@ library(knitr)
 library(ecs.data)
 library(tidyverse)
 library(lubridate)
-library(readr)
 library(haven)
 library(glue)
-library(rlang)
 library(readxl)
-library(RStata)
+library(Statamarkdown)
+library(waldo)
+library(sessioninfo)
 
-opts_chunk$set(echo = TRUE, results = 'asis')
+opts_chunk$set(echo = TRUE, results = 'markup')
 ```
 
-```{r functions}
+```{r functions, message=FALSE}
 print_date <- stamp(
   "01/01/1960",
   orders = "dmy",
   locale = "Spanish_Spain.1252"
 )
-suppressMessages(
-  print_datetime <- stamp(
-    "1960-01-01_23-59-59",
-    orders = "ymd_HMS",
-    locale = "Spanish_Spain.1252"
-  )
+
+print_datetime <- stamp(
+  "1960-01-01_23-59-59",
+  orders = "ymd_HMS",
+  locale = "Spanish_Spain.1252"
 )
 ```
 
@@ -96,6 +95,9 @@ BACKUP_FILEPATH    <- file.path(HISTORY_DIR, BACKUP_FILENAME)
 # C2019W1_SPSS_FILENAME <- file.path(HISTORY_DIR, C2019W1_SPSS_FILENAME)
 CHANGELOG_FILEPATH <- file.path(C2019W1_DIR, CHANGELOG_FILENAME)
 
+STATA_POST_CHANGES_SCRIPT <- "re-run.do"
+THROUGHPUT_FILEPATH       <- "throughput.dta"
+
 NEW_FILEPATH <- if (IS_TEST) "test.dta" else CURRENT_FILEPATH
 ```
 
@@ -106,8 +108,14 @@ The _Edad con Salud_ raw dataset of Cohort 2019, wave 1 (C2019W1)
 This dataset contains errors in the free-text variables.
 This is due to, when doing that processing, the codification of those variables
 was inadvertently changed.
+Apparently, the change was due to [`haven::read_dta()`][read_dta] incorrectly
+assuming "windows-1252" encoding, where it should be explicitly stated to use
+the proper encoding ("UTF-8" in this case) in Stata 13 files or earlier.
+See the [`haven::read_dta()` help page][read_dta] for more information.
 
 [dates_fix]: https://dauam-my.sharepoint.com/:x:/r/personal/marta_miret_uam_es/Documents/Edad%20con%20Salud/Bases%20de%20datos%20maestras%20Edad%20con%20Salud/Ola_3/Cohorte_2019/Modificaciones_BBDD_c2019w1.xlsx
+
+[read_dta]: https://www.rdocumentation.org/packages/haven/versions/2.5.1/topics/read_dta
 
 This script updates the codification of those variables to the proper UTF-8
 encoding, implementing the process through the following steps:
@@ -124,8 +132,8 @@ encoding, implementing the process through the following steps:
 1. Re-run all the changes that have been performed in the subsequent updated of
    the dataset.
 
-1. Check that all the variables are equivalent, except for those where encoding
-   errors are found.
+1. Check that the datasets are equivalent, except for those variables where
+   encoding errors were found.
 
 1. Save the version with these changes to the raw dataset file path.
    
@@ -182,7 +190,10 @@ dataset_updated <- dataset_c2019w1 |> mutate(
 
 ## Re-run all the subsequent changes
 
-```{r rerun-changes}
+The changes in the changelog file are first read and output to a Stata "do file"
+along with the dataset with the time and period variables updated.
+
+```{r preprocesss-post-changes}
 changelog <- read_excel(CHANGELOG_FILEPATH)
 
 syntax_lines <- changelog                                  |>
@@ -192,14 +203,71 @@ syntax_lines <- changelog                                  |>
   slice(-1)                                                |>
   pull()
 
-
+# Write stata "do file" and dataset
+syntax_lines    |> write_lines(STATA_POST_CHANGES_SCRIPT)
+dataset_updated |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
 ```
 
-## Check variables equivalence
+The subsequent changes are then run in Stata.
 
-## Escritura del nuevo archivo de datos
+```{stata rerun-post-changes}
+use "throughput.dta"
+
+do re-run.do
+
+saveold "throughput.dta", replace version(13)
+```
+
+The dataset is read back again, taking into account that the "UTF-8" encoding
+must be explicitly specified.
+
+```{r read-implemented-changes}
+# Encoding must be specified for Stata 13 files
+dataset_updated <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
+```
+
+## Check equivalence of datasets
+
+The newly created dataset is compared with the current version, to scan for
+differences.
+
+```{r check-equivalence}
+dataset_current <- read_dta(CURRENT_FILEPATH)
+
+compare(dataset_current, dataset_updated, max_diffs = Inf)
+```
+
+It seems that the two variables identifying the "pre-lockdown" subsample are
+missing (`subsample_pre` and `interview_pre`).
+The rest of the differences are due to the encoding, so these two variables are
+added.
+
+```{r add-prelockdown-vars}
+dataset_updated <- dataset_updated |> full_join(
+  dataset_current |> select(ID_ECS, subsample_pre, interview_pre),
+  by = "ID_ECS"
+)
+```
+
+## New dataset writing
+
+The updated dataset is written back to the main raw dataset path.
 
 ```{r write-updated-dataset}
 dataset_updated |> write_dta(NEW_FILEPATH, version = STATA_VERSION)
+```
+
+# Final clean-up
+
+Throughput files are cleaned up.
+
+```{r cleanup, results='hide'}
+file.remove(THROUGHPUT_FILEPATH, STATA_POST_CHANGES_SCRIPT)
+```
+
+# Session info
+
+```{r session-info}
+session_info()
 ```
 
