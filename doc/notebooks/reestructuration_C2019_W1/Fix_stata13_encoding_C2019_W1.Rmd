@@ -91,6 +91,8 @@ CHANGELOG_FILEPATH <- file.path(C2019W1_DIR, CHANGELOG_FILENAME)
 STATA_POST_CHANGES_SCRIPT <- "re-run.do"
 THROUGHPUT_FILEPATH       <- "throughput.dta"
 
+# The resulting "file" is set to a local "test path" in test mode; only when
+#   this process is finally implemented it is set to its actual path.
 NEW_FILEPATH <- if (IS_TEST) "test.dta" else CURRENT_FILEPATH
 ```
 
@@ -189,6 +191,7 @@ along with the dataset with the time and period variables updated.
 ```{r preprocesss-post-changes}
 changelog <- read_excel(CHANGELOG_FILEPATH)
 
+# The syntax of the subsequent changes are read from the changelog Excel file
 syntax_lines <- changelog                                  |>
   filter(`FECHA DE IMPLEMENTACIÓN` > ORIGINAL_CHANGE_DATE) |>
   rename_at(5, ~"Syntax")                 |> # Assign syntactically-correct name
@@ -196,7 +199,9 @@ syntax_lines <- changelog                                  |>
   slice(-1)                                                |>
   pull()
 
-# Write stata "do file" and dataset
+# These syntax lines are then written (along with a temporary dataset) to a
+#   ".do" file (re-run.do), to be executed in Stata (see next chunk, labelled
+#   `rerun-post-changes`).
 syntax_lines    |> write_lines(STATA_POST_CHANGES_SCRIPT)
 dataset_updated |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
 ```
