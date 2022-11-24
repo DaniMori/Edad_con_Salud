@@ -86,12 +86,12 @@ the same FIS call, i.e. its Wave 2).
 
 In summary, the two folders of interest for this plan are:
 
-* Interview data folder: `[DB_FOLDER]/Ola_4/Cohorte 2011`. We will use the
+- **Interview data folder:** `[DB_FOLDER]/Ola_4/Cohorte 2011`. We will use the
   wildcard `[INTERVIEW_DATA_FOLDER]` to refer to this path in subsequent file
   and folder paths.
 
-* Verbal autopsy data folder:
-  `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia verbal/Cohorte_2011`. We will
+- **Verbal autopsy data folder:**
+  `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia_verbal/Cohorte_2011`. We will
   use the wildcard `[VERBAL_AUTOPSY_DATA_FOLDER]` to refer to this path in
   subsequent file and folder paths.
 
@@ -151,11 +151,11 @@ affected (which will be deleted).
 For each of the two datasets (interview and verbal autopsy), two different file
 types will be considered:
 
-- Raw or master dataset: This will refer to the most up-to-date dataset at any
-  time. Any analysis or process to be performed will be done with this dataset,
-  save exceptions.
+- **Raw or master dataset:** This will refer to the most up-to-date dataset at
+  any time. Any analysis or process to be performed will be done with this
+  dataset, save exceptions.
   
-- Historical version of the dataset: Previous, outdated datasets will be
+- **Historical version of the dataset:** Previous, outdated datasets will be
   stored as historical versions of the updated master dataset. The historical
   datasets will in turn be characterized by being a _partial_ version of the
   dataset, or a _complete_ one. Partial versions refer to the provisional
@@ -176,9 +176,9 @@ datasets will be stored in Stata 13 format.
 
 The master datasets will have a path matching the following pattern:
 
-- Master interview dataset: `[INTERVIEW_DATA_FOLDER]/rawdata_c2011w4.dta`
+- **Master interview dataset:** `[INTERVIEW_DATA_FOLDER]/rawdata_c2011w4.dta`
 
-- Master verbal autopsy dataset:
+- **Master verbal autopsy dataset:**
   `[VERBAL_AUTOPSY_DATA_FOLDER]/rawdata_autopsy_c2011w4.dta`
 
 The historical versions will be stored in their corresponding `history`
