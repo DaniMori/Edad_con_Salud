@@ -195,10 +195,10 @@ changelog <- read_excel(CHANGELOG_FILEPATH)
 # The syntax of the subsequent changes are read from the changelog Excel file
 syntax_lines <- changelog                                  |>
   filter(`FECHA DE IMPLEMENTACIÓN` > ORIGINAL_CHANGE_DATE) |>
-  rename_at(5, ~"Syntax")                 |> # Assign syntactically-correct name
-  select(Syntax)                                           |>
   slice(-1)                                                |>
-  pull()
+  # Assign syntactically-correct name (the one in the changelog is very long):
+  rename_at(5, ~"Syntax")                                  |>
+  pull(Syntax)
 
 # These syntax lines are then written (along with a temporary dataset) to a
 #   ".do" file (re-run.do), to be executed in Stata (see next chunk, labelled
