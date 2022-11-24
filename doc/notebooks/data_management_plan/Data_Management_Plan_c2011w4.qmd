@@ -14,9 +14,9 @@ The intention is to implement this plan in the newly created datasets for the
 
 This document refers to the following data sources from **Wave 4, Cohort 2011**:
 
-* Raw responses from the field interviews
+-   Raw responses from the field interviews
 
-* Raw responses from the verbal autopsies
+-   Raw responses from the verbal autopsies
 
 The information contained in this document affects only these two data sources.
 No other datasets or data sources are considered here.
@@ -25,13 +25,13 @@ No other datasets or data sources are considered here.
 
 The aims of this plan are
 
-1. Describe the current data storage structure
+1.  Describe the current data storage structure
 
-1. Propose a more systematic data storage structure, that can be flexible
-   enough to be embedded within the current one
-   
-1. Propose a systematic manipulation of the datasets, in order to respect the
-   aforementioned storage structure.
+2.  Propose a more systematic data storage structure, that can be flexible
+    enough to be embedded within the current one
+
+3.  Propose a systematic manipulation of the datasets, in order to respect the
+    aforementioned storage structure.
 
 # Current state of the data storage structure
 
@@ -39,17 +39,17 @@ The aims of this plan are
 
 The project Edad con Salud has the following two main folders:
 
-* `Bases de datos maestras Edad con Salud`: This is the main folder where the
-  raw datasets from the interviews are stored. With only a few exceptions, any
-  other dataset related to the project is NOT storaged in this main folder. We
-  refer to this main folder as the _database folder_.
-  
-* `Documentacion Edad con Salud`: This is the main folder for documentation
-  other than the raw datasets from the interviews. In principle and with few
-  exceptions, most of the generated and additional datasets from the project are
-  stored in this main folder. We refer to this main folder as the _documentation
-  folder_.
-  
+-   `Bases de datos maestras Edad con Salud`: This is the main folder where the
+    raw datasets from the interviews are stored. With only a few exceptions, any
+    other dataset related to the project is NOT storaged in this main folder. We
+    refer to this main folder as the *database folder*.
+
+-   `Documentacion Edad con Salud`: This is the main folder for documentation
+    other than the raw datasets from the interviews. In principle and with few
+    exceptions, most of the generated and additional datasets from the project
+    are stored in this main folder. We refer to this main folder as the
+    *documentation folder*.
+
 These two folders are stored under the OneDrive storage of user "Marta Miret
 Garcia". Therefore, the complete folder names are
 `Marta Miret Garcia - Bases de datos maestras Edad con Salud` and
@@ -75,25 +75,25 @@ paths.
 
 ## Main folder structures
 
-In general, these two folders have a parallel structure, that identifies
-"Waves" and "Cohorts". Within the database folder, the structure for Cohort
-2011, Wave 4, is `Ola_4/Cohorte 2011`. Within the documentation folder, there is
-a folder for Wave 4, called `Edad con salud - Ola 4`. Within this one, there are
-several folders for different purposes (e.g., `Autopsia verbal` for the verbal
-autopsies) and, within it, a `Cohorte_2011` folder for the Cohort 2011 data
-(as there intends to be another one for the Cohort 2019 data collected in
-the same FIS call, i.e. its Wave 2).
+In general, these two folders have a parallel structure, that identifies "Waves"
+and "Cohorts". Within the database folder, the structure for Cohort 2011, Wave
+4, is `Ola_4/Cohorte 2011`. Within the documentation folder, there is a folder
+for Wave 4, called `Edad con salud - Ola 4`. Within this one, there are several
+folders for different purposes (e.g., `Autopsia verbal` for the verbal
+autopsies) and, within it, a `Cohorte_2011` folder for the Cohort 2011 data (as
+there intends to be another one for the Cohort 2019 data collected in the same
+FIS call, i.e. its Wave 2).
 
 In summary, the two folders of interest for this plan are:
 
-- **Interview data folder:** `[DB_FOLDER]/Ola_4/Cohorte 2011`. We will use the
-  wildcard `[INTERVIEW_DATA_FOLDER]` to refer to this path in subsequent file
-  and folder paths.
+-   **Interview data folder:** `[DB_FOLDER]/Ola_4/Cohorte 2011`. We will use the
+    wildcard `[INTERVIEW_DATA_FOLDER]` to refer to this path in subsequent file
+    and folder paths.
 
-- **Verbal autopsy data folder:**
-  `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia_verbal/Cohorte_2011`. We will
-  use the wildcard `[VERBAL_AUTOPSY_DATA_FOLDER]` to refer to this path in
-  subsequent file and folder paths.
+-   **Verbal autopsy data folder:**
+    `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia_verbal/Cohorte_2011`. We will
+    use the wildcard `[VERBAL_AUTOPSY_DATA_FOLDER]` to refer to this path in
+    subsequent file and folder paths.
 
 These folder structures are inherited from the history of the Courage project
 and previous waves of the Edad con Salud project. This partial data management
@@ -151,21 +151,21 @@ affected (which will be deleted).
 For each of the two datasets (interview and verbal autopsy), two different file
 types will be considered:
 
-- **Raw or master dataset:** This will refer to the most up-to-date dataset at
-  any time. Any analysis or process to be performed will be done with this
-  dataset, save exceptions.
-  
-- **Historical version of the dataset:** Previous, outdated datasets will be
-  stored as historical versions of the updated master dataset. The historical
-  datasets will in turn be characterized by being a _partial_ version of the
-  dataset, or a _complete_ one. Partial versions refer to the provisional
-  versions that are sent by the data provider during the fieldwork progress and
-  to not contain the whole sample of cases; these datasets will usually become
-  historical versions when a new, more complete version of the dataset is
-  provided by the data provider. The complete ones, on the other hand, refer to
-  the final version of the dataset delivered by the data provider. These will
-  usually be updated only when errors in the data need to be corrected by the
-  research team.
+-   **Raw or master dataset:** This will refer to the most up-to-date dataset at
+    any time. Any analysis or process to be performed will be done with this
+    dataset, save exceptions.
+
+-   **Historical version of the dataset:** Previous, outdated datasets will be
+    stored as historical versions of the updated master dataset. The historical
+    datasets will in turn be characterized by being a *partial* version of the
+    dataset, or a *complete* one. Partial versions refer to the provisional
+    versions that are sent by the data provider during the fieldwork progress
+    and to not contain the whole sample of cases; these datasets will usually
+    become historical versions when a new, more complete version of the dataset
+    is provided by the data provider. The complete ones, on the other hand,
+    refer to the final version of the dataset delivered by the data provider.
+    These will usually be updated only when errors in the data need to be
+    corrected by the research team.
 
 ### File formats
 
@@ -175,26 +175,26 @@ datasets will be stored in Stata 13 format.
 In order to comply with this specificacion, the following considerations must be
 taken into account:
 
-- When working with datasets in Stata, the files must be saved using the
-  `saveold` command (specifying that the version to use is 13), i.e.:
+-   When working with datasets in Stata, the files must be saved using the
+    `saveold` command (specifying that the version to use is 13), i.e.:
 
-```stata
+``` stata
 saveold "[FILE_PATH]", replace version(13)
 ```
 
-- When working with R, it is recommended that the `haven` package is used.
-  Functions `haven::read_dta()` and `haven::write_dta()` allow to work with
-  Stata files. For reading files, the 'UTF-8' encoding must be specified in
-  Stata 13 files, so that the text variables and other literal strings are
-  properly enconded, i.e.:
+-   When working with R, it is recommended that the `haven` package is used.
+    Functions `haven::read_dta()` and `haven::write_dta()` allow to work with
+    Stata files. For reading files, the 'UTF-8' encoding must be specified in
+    Stata 13 files, so that the text variables and other literal strings are
+    properly enconded, i.e.:
 
-```r
+``` r
 have::read_dta("[FILE_PATH]", encoding = 'UTF-8')
 ```
 
-  For writing files, the version of Stata must be specified, i.e.:
+For writing files, the version of Stata must be specified, i.e.:
 
-```r
+``` r
 have::write_dta([dataset_object], "[FILE_PATH]", version = 13)
 ```
 
@@ -206,10 +206,10 @@ symbol that addresses an object in R that contains an in-memory dataset.
 
 The master datasets will have a path matching the following pattern:
 
-- **Master interview dataset:** `[INTERVIEW_DATA_FOLDER]/rawdata_c2011w4.dta`
+-   **Master interview dataset:** `[INTERVIEW_DATA_FOLDER]/rawdata_c2011w4.dta`
 
-- **Master verbal autopsy dataset:**
-  `[VERBAL_AUTOPSY_DATA_FOLDER]/rawdata_autopsy_c2011w4.dta`
+-   **Master verbal autopsy dataset:**
+    `[VERBAL_AUTOPSY_DATA_FOLDER]/rawdata_autopsy_c2011w4.dta`
 
 The historical versions will be stored in their corresponding `history`
 subfolder. The name of the datasets in these cases will depend on whether a file
@@ -225,18 +225,18 @@ and day both with a trailing zero if necessary), `HH` the hour in 24-hour
 format, and `mm` the minutes. Note that the date and time components are
 separated by an *underscore* character (`_`) while the components within the
 date and within the time are separated by *dashes* (`-`). Additionally, the
-times will be given in _GMT_.
+times will be given in *GMT*.
 
 Below are two examples of (hypotetical) historical dataset file paths, to help
 clarify the meaning of the different patterns:
 
-- Partial version of the verbal autopsy dataset, archived on October 25th 2022
-  at 2:28PM CEST (= 1:28PM GMT):
-  `[VERBAL_AUTOPSY_DATA_FOLDER]/history/snapshot_partial_2022-10-25_13-28.dta`
-  
-- Complete version of the interview dataset, archived on December 15th 2022,
-  at 5:45PM CET (= 3:45PM GMT):
-  `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
+-   Partial version of the verbal autopsy dataset, archived on October 25th 2022
+    at 2:28PM CEST (= 1:28PM GMT):
+    `[VERBAL_AUTOPSY_DATA_FOLDER]/history/snapshot_partial_2022-10-25_13-28.dta`
+
+-   Complete version of the interview dataset, archived on December 15th 2022,
+    at 5:45PM CET (= 3:45PM GMT):
+    `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
 
 ## Additional files
 
@@ -252,77 +252,99 @@ The two files will have the same structure, which will consist of a single
 spreadsheet named "Changelog_c2011w4". This spreadsheet will have the following
 column headers, in the first row (columns A to I):
 
-- `REQUEST DATE`: Date when the change request is made
+-   `REQUEST DATE`: Date when the change request is made
 
-- `REQUESTER (data provider/any researcher)`: Name of the researcher who
-  requests the change; if the change is due to a new version of the dataset
-  provided by the data provider, it will be filled in with the name of the data
-  provider (i.e., Ipsos) instead.
+-   `REQUESTER (data provider/any researcher)`: Name of the researcher who
+    requests the change; if the change is due to a new version of the dataset
+    provided by the data provider, it will be filled in with the name of the
+    data provider (i.e., Ipsos) instead.
 
-- `MODIFICATION`: Detailed description of the modification to be performed in
-  the dataset. If the update consists of a new (partial) version of the dataset,
-  provided by the data provider, it will state "Partial/Final dataset update",
-  whichever proceeds.
+-   `MODIFICATION`: Detailed description of the modification to be performed in
+    the dataset. If the update consists of a new (partial) version of the
+    dataset, provided by the data provider, it will state "Partial/Final dataset
+    update", whichever proceeds.
 
-- `REASON`: The reason for requesting the update. If the update consists of a
-  new, more complete version of the dataset by the data provider, it will state
-  "Field work progress".
+-   `REASON`: The reason for requesting the update. If the update consists of a
+    new, more complete version of the dataset by the data provider, it will
+    state "Field work progress".
 
-- `Syntax for modification in dataset (if any)`: This must be the Stata syntax
-  to be performed on the dataset for the change to be applied. Alternatively,
-  when the syntax is more complex, it may be in an external script/notebook in
-  R or other language; in such a case, a link in OneDrive/Sharepoint, accessible
-  to all the researchers, will be filled-in. Finally, if there is no syntax
-  (e.g., because the update implies substituting a partial version of the
-  dataset by a new, more complete one), `NA` will be filled-in.
+-   `Syntax for modification in dataset (if any)`: This must be the Stata syntax
+    to be performed on the dataset for the change to be applied. Alternatively,
+    when the syntax is more complex, it may be in an external script/notebook in
+    R or other language; in such a case, a link in OneDrive/Sharepoint,
+    accessible to all the researchers, will be filled-in. Finally, if there is
+    no syntax (e.g., because the update implies substituting a partial version
+    of the dataset by a new, more complete one), `NA` will be filled-in.
 
-- `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`: If any of the existing
-  datasets of the outcome variables may be affected by the change, they must be
-  listed here. It is preferrable to err on the _liberal side_, so **in case of
-  doubt about a dataset, it must be listed**. If there are no affected datasets,
-  `NA` will be filled-in.
+-   `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`: If any of the existing
+    datasets of the outcome variables may be affected by the change, they must
+    be listed here. It is preferrable to err on the *liberal side*, so **in case
+    of doubt about a dataset, it must be listed**. If there are no affected
+    datasets, `NA` will be filled-in.
 
-- `REMARKS (if any)`: Any remarks about this update that don't fit in any
-  of the other fields must be stated here. The more information provided, the
-  better. If there are no remarks, `NA` will be filled-in.
+-   `REMARKS (if any)`: Any remarks about this update that don't fit in any of
+    the other fields must be stated here. The more information provided, the
+    better. If there are no remarks, `NA` will be filled-in.
 
-- `IMPLEMENTATION DATE`: Date when the change is implemented and the dataset
-  updated.
+-   `IMPLEMENTATION DATE`: Date when the change is implemented and the dataset
+    updated.
 
-- `REVIEWER`: Person in charge of implementing the change and performing the
-  update.
+-   `REVIEWER`: Person in charge of implementing the change and performing the
+    update.
 
 ## Folder and file permissions
 
 In order to avoid issues with the integrity of the data and confusion among the
-users, several access levels are defined. They are identified by roles that
-have different permissions to access the data structure. These permissions are
-implemented through OneDrive's advanced permission management interface
+users, several access levels are defined. Please note that access levels are
+inherited throughout the folder structure; that is, if an access level is not
+specified for an element (file or folder), it inherits the access level of its
+"parent" folder (i.e., the one it in which it is contained).
+
+The access levels defined for the different elements of the data structure are:
+
+-   **Total control:** Users with this access level can read, write, and edit
+    the element. They can also edit other users' permissions for the element.
+
+-   **Edit:** Users with *edit* access level can read, write, and edit the
+    element. However, they cannot edit other users' permissions.
+
+-   **Read:** This access level grants reading access to an element, but users
+    with this access level can neither write or edit the element, nor edit its
+    permissions.
+
+-   **None:** This implies that no permissions are granted; the users cannot
+    read, write, or edit the element, nor can they edit its permissions.
 
 ### Data access roles
 
-The following access roles are defined:
+The permissions are assigned through OneDrive's advanced permission management
+interface, depending on the access level assigned to each user. The different
+users are assigned to a role, such that each role has different permissions to
+access the data structure. These permissions are implemented through OneDrive's
+advanced permission management interface.
 
-- **Project owners:** Have total control over all the folder structure and
-  files, meaning that they can edit other users' permissions, and add, edit, and
-  delete files.
-  
-- **Data owner:** Similar to the project owner, except that they only have
-  reading permissions for the `history` folder. This implies that they can
-  neither add, edit, or delete files, nor edit permissions in this folder.
-  
-- **Data curator:** Have reading and writing permissions for the main folders
-  (but they cannot edit permissions). Similarly to the data owner, they only
-  have reading permissions for the `history` folder.
-  
-- **Project researcher:** Have reading permissions for the main folders, but
-  no permissions at all for the `history` folder.
+The data access roles defined are the following:
 
-- **External user:** These are external researchers and other users that are
-  assumed not to access or work with data processes often. They only have
-  reading permissions for the main folders and no permissions for the `history`
-  folder.
+-   **Project owners:** Have total control over all the folder structure and
+    files, meaning that they can edit other users' permissions, and add, edit,
+    and delete files.
 
-The roles _project researcher_ and _external user_ are distinguished by their
+-   **Data owners:** Similar to the project owner, except that they only have
+    reading permissions for the `history` folder. This implies that they can
+    neither add, edit, or delete files, nor edit permissions in this folder.
+
+-   **Data curators:** Have reading and writing permissions for the main folders
+    (but they cannot edit permissions). Similarly to the data owner, they only
+    have reading permissions for the `history` folder.
+
+-   **Project researchers:** Have reading permissions for the main folders, but
+    no permissions at all for the `history` folder.
+
+-   **External users:** These are external researchers and other users that are
+    assumed not to access or work with data processes often. They only have
+    reading permissions for the main folders and no permissions for the
+    `history` folder.
+
+The roles *project researcher* and *external user* are distinguished by their
 access permission to the changelog files, as detailed below.
 
