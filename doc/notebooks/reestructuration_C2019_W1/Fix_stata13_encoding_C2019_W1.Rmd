@@ -227,12 +227,15 @@ dataset_updated <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 ## Check equivalence of datasets
 
 The newly created dataset is compared with the current version, to scan for
-differences.
+differences. In order to avoid a long output, we read with the "wrong encoding"
+the new dataset, and compare it with the current version; this one has to be
+read in UTF-8, as the errors are "correctly coded" in UTF-8
 
 ```{r check-equivalence}
-dataset_current <- read_dta(CURRENT_FILEPATH)
+dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "UTF-8")
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH)
 
-compare(dataset_current, dataset_updated, max_diffs = Inf)
+compare(dataset_current, dataset_compare, max_diffs = Inf)
 ```
 
 It seems that the two variables identifying the "pre-lockdown" subsample are
@@ -246,6 +249,20 @@ dataset_updated <- dataset_updated |> full_join(
   by = "ID_ECS"
 )
 ```
+
+Then we write again the "throughput dataset", and repeat the process. We expect
+that no differences are found now between the two objects.
+
+```{r recheck-equivalence}
+dataset_updated |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
+
+dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "UTF-8")
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH)
+
+compare(dataset_current, dataset_compare, max_diffs = Inf)
+```
+
+Now we see that the two objects are exactly the same.
 
 ## New dataset writing
 
