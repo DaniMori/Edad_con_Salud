@@ -172,6 +172,36 @@ types will be considered:
 As previously agreed for all datasets in the Edad con Salud project, all
 datasets will be stored in Stata 13 format.
 
+In order to comply with this specificacion, the following considerations must be
+taken into account:
+
+- When working with datasets in Stata, the files must be saved using the
+  `saveold` command (specifying that the version to use is 13), i.e.:
+
+```stata
+saveold "[FILE_PATH]", replace version(13)
+```
+
+- When working with R, it is recommended that the `haven` package is used.
+  Functions `haven::read_dta()` and `haven::write_dta()` allow to work with
+  Stata files. For reading files, the 'UTF-8' encoding must be specified in
+  Stata 13 files, so that the text variables and other literal strings are
+  properly enconded, i.e.:
+
+```r
+have::read_dta("[FILE_PATH]", encoding = 'UTF-8')
+```
+
+  For writing files, the version of Stata must be specified, i.e.:
+
+```r
+have::write_dta([dataset_object], "[FILE_PATH]", version = 13)
+```
+
+**NOTE:** In all the previous code templates in this section, `[FILE_PATH]`
+stands for the path to the dataset file path. `[dataset_object]` represents the
+symbol that addresses an object in R that contains an in-memory dataset.
+
 ### File paths
 
 The master datasets will have a path matching the following pattern:
