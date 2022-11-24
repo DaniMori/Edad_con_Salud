@@ -242,7 +242,7 @@ clarify the meaning of the different patterns:
 
 ### Changelog
 
-Each folder will have an additional file with a "changelog", that will keep
+Each folder will have an additional file with a "change log", that will keep
 track of the updates made to the corresonding dataset. These files will have the
 format of an Excel book, and their names will be `Changelog_DB_c2011w4.xlsx` and
 `Changelog_autopsy_DB_c2011w4.xlsx` for the interview and verbal autopsy folder,
@@ -291,4 +291,38 @@ column headers, in the first row (columns A to I):
 
 - `REVIEWER`: Person in charge of implementing the change and performing the
   update.
+
+## Folder and file permissions
+
+In order to avoid issues with the integrity of the data and confusion among the
+users, several access levels are defined. They are identified by roles that
+have different permissions to access the data structure. These permissions are
+implemented through OneDrive's advanced permission management interface
+
+### Data access roles
+
+The following access roles are defined:
+
+- **Project owners:** Have total control over all the folder structure and
+  files, meaning that they can edit other users' permissions, and add, edit, and
+  delete files.
+  
+- **Data owner:** Similar to the project owner, except that they only have
+  reading permissions for the `history` folder. This implies that they can
+  neither add, edit, or delete files, nor edit permissions in this folder.
+  
+- **Data curator:** Have reading and writing permissions for the main folders
+  (but they cannot edit permissions). Similarly to the data owner, they only
+  have reading permissions for the `history` folder.
+  
+- **Project researcher:** Have reading permissions for the main folders, but
+  no permissions at all for the `history` folder.
+
+- **External user:** These are external researchers and other users that are
+  assumed not to access or work with data processes often. They only have
+  reading permissions for the main folders and no permissions for the `history`
+  folder.
+
+The roles _project researcher_ and _external user_ are distinguished by their
+access permission to the changelog files, as detailed below.
 
