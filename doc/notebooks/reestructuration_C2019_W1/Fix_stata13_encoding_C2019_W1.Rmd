@@ -78,6 +78,7 @@ HISTORY_DIR    <- file.path(C2019W1_DIR, HISTORY_SUBDIR)
 
 CURRENT_FILENAME   <- "rawdata_c2019w1.dta"
 RESTORE_FILENAME   <- "snapshot_2022-01-12_complete.dta"
+# The backup file name is constructed with the "current date and time" object
 BACKUP_FILENAME    <- "snapshot_{CHANGE_DATETIME}.dta" |> glue()
 CHANGELOG_FILENAME <- "Modificaciones_BBDD_c2019w1.xlsx"
 
