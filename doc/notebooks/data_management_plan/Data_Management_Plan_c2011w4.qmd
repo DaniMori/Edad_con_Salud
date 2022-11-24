@@ -298,7 +298,7 @@ In order to avoid issues with the integrity of the data and confusion among the
 users, several access levels are defined. Please note that access levels are
 inherited throughout the folder structure; that is, if an access level is not
 specified for an element (file or folder), it inherits the access level of its
-"parent" folder (i.e., the one it in which it is contained).
+_parent folder_ (i.e., the one it in which it is contained).
 
 The access levels defined for the different elements of the data structure are:
 
@@ -348,3 +348,19 @@ The data access roles defined are the following:
 The roles *project researcher* and *external user* are distinguished by their
 access permission to the changelog files, as detailed below.
 
+### Permissions of the different roles
+
+@tbl-roles below summarizes the different roles and the access levels of each
+one to the different elelments. Please not that, when an access level is not
+explcitly stated for an element, it inherits the permissions from its _parent
+folder_.
+
+| Role                   | main folder   | changelog file | history folder |
+|------------------------|---------------|----------------|----------------|
+| **Project owner**      | total control | total control  | total control  |
+| **Data owner**         | total control | total control  | read           |
+| **Data curator**       | edit          | edit           | read           |
+| **Project researcher** | read          | edit           | none           |
+| **External user**      | read          | read           | none           |
+
+: Folder and file permissions for the different access roles {#tbl-roles}
