@@ -1,7 +1,14 @@
 ---
 title: "Data Management Plan"
 author: "Daniel Morillo"
-format: docx
+format:
+  docx:
+    toc: true
+    df-print: kable
+knitr:
+  opts_chunk:
+    echo: false
+    results: asis
 ---
 
 # Introduction
@@ -466,3 +473,67 @@ The steps to update the dataset file are the following:
     the [Edad con Salud/Actualización
     BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
     channel.
+
+\newpage
+
+```{r doc-control}
+#| include: false
+
+library(tidyverse)
+library(lubridate)
+
+DOC_MAIN_INFO <- tribble(
+  ~name,                  ~value,
+   "Responsible",          "",
+   "Dissemination level",  "Confidential (CCOMS team only)",
+   "Type",                 "Data management plan",
+   "Keywords",             c(
+                             "Edad con Salud",
+                             "Cohort 2011",
+                             "Wave 4",
+                             "data management",
+                             "OneDrive"
+                           ) |> paste(collapse = ', ')
+)
+RESPONSIBLE         <- ""
+DISSEMINATION_LEVEL <- "Confidential (CCOMS team only)"
+DOC_TYPE            <- 
+KEYWORDS            <- c(
+  "Edad con Salud",
+  "Cohort 2011",
+  "Wave 4",
+  "data management",
+  "OneDrive"
+)
+
+VERSION_HISTORY <- tibble(
+  Authors                  = c("Daniel Morillo"),
+  Contributors             = c(""),
+  Reviewers                = c("Blanca Dolz"),
+  `Version nº`             = c("0.0"),
+  Name                     = c("Borrador inicial"),
+  Date                     = c("25-11-2022"),
+  `Change description`     = c("Primer borrador")
+)
+
+current_version <- VERSION_HISTORY |> slice(n())
+```
+
+# DOCUMENT INFORMATION
+
+<br>
+
+```{r doc-info}
+current_version              |>
+  pivot_longer(everything()) |>
+  bind_rows(DOC_MAIN_INFO)   |>
+  slice(1:3, 8:11, 4:6)
+```
+
+# VERSION HISTORY
+
+<br>
+
+```{r version-history}
+VERSION_HISTORY |> select(-(Authors:Reviewers))
+```
