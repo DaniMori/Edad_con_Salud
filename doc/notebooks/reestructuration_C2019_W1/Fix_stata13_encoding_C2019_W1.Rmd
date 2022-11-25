@@ -1,14 +1,9 @@
 ---
 title: "Correction of free-text variables in Cohort 2019 - Wave 1"
 output:
-  html_document:
-    toc:             yes
-    toc_float:       yes
-    df_print:        paged
-    code_folding:    hide
-    code_download:   yes
+  github_document: default
 params:
-  test:              yes
+  test: no
 editor_options: 
   chunk_output_type: console
 ---
