@@ -420,3 +420,49 @@ The steps to update the dataset file are the following:
     the [Edad con Salud/Actualización
     BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
     channel.
+
+### Update requested by a project member
+
+This update will happen when a project member spots an error in the dataset.
+Normally, this will happen after the fieldwork is finished (i.e. in the complete
+dataset file), so that the current version of the dataset is being considered
+the final version until the update.
+
+The steps to update the dataset file are the following:
+
+1.  The updating process starts when a project member spots an error or several
+    errors in the current version of the dataset.
+2.  The project member inserts a *change request* in the corresponding changelog
+    file, filling in the fields `REQUEST DATE`,
+    `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
+    `Syntax for modification in dataset (if any)`,
+    `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`, and `REMARKS (if any)`,
+    according to the specification in the @sec-changelog section. It is the
+    poject member's responsibility to make sure that the syntax in the field
+    `Syntax for modification in dataset (if any)` implements with fidelity the
+    description of the change stated in the field `MODIFICATION`.
+3.  That same project member notifies the change request through the [Edad con
+    Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel in Microsoft Teams.
+4.  A project owner runs the syntax in the new change request on the current
+    version of the dataset.
+5.  If an error is detected in the syntax, the project owner notifies the
+    project member of the error through the [Edad con Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel, and the project member goes back to step 2.
+6.  If the syntax runs without errors, the project owner copies the current
+    dataset file to its new location in the corresponding `history` folder, as
+    specified in Section @sec-filepaths, and renames it accordingly. Please note
+    that, in this case, the name will correspond to a complete fieldwork dataset
+    (`snapshot_[YYYY-MM-DD_HH-MM].dta`).
+7.  The project owner saves the dataset with the changes in the raw dataset
+    path, with its proper name (`rawdata_c2011w4.dta` for the master interview
+    dataset, or `rawdata_autopsy_c2011w4.dta` for the master verbal autopsy
+    dataset).
+8.  The project owner fills in the fileds `IMPLEMENTATION DATE` and `REVIEWER`
+    (with their own name) in the row of the change request of the changelog
+    file, and then notifies the rest of the research team of the update through
+    the [Edad con Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel.
