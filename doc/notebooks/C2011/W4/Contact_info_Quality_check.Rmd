@@ -1,0 +1,35 @@
+---
+title: |
+  Quality check of the personal data in 'Edad con Salud', Cohort 2011 - wave 4
+output: word_document
+params:
+  pass: ''
+---
+
+```{r libraries}
+#| include: false
+library(tidyverse)
+library(xlsx)
+```
+
+
+# Introduction
+
+This document shows the result of the quality checks performed on the personal
+data (i.e. contact information) of the participants in the 4th wave of the 2011
+cohort (i.e. *original cohort*) of the *Edad con Salud* project.
+
+```{r load-data}
+#| include: false
+
+# The data is in a local path, and encrypted with a password.
+DATASET_PATH <- r"(~\Workspace\21057906DatosContacto20221213.xlsx)"
+contact_data <- xlsx::read.xlsx(
+  DATASET_PATH,
+  sheetIndex = 1,
+  password   = if (interactive()) rstudioapi::askForPassword() else params$pass
+) |>
+  as_tibble()
+```
+
+
