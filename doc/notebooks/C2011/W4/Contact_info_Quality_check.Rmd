@@ -3,7 +3,7 @@ title: |
   Quality check of the personal data in 'Edad con Salud', Cohort 2011 - wave 4
 output: word_document
 params:
-  pass: ''
+  password: 'password for the contact data file'
 ---
 
 ```{r libraries}
@@ -24,10 +24,11 @@ cohort (i.e. *original cohort*) of the *Edad con Salud* project.
 
 # The data is in a local path, and encrypted with a password.
 DATASET_PATH <- r"(~\Workspace\21057906DatosContacto20221213.xlsx)"
-contact_data <- xlsx::read.xlsx(
+contact_data <- read.xlsx(
   DATASET_PATH,
   sheetIndex = 1,
-  password   = if (interactive()) rstudioapi::askForPassword() else params$pass
+  password   = if (interactive()) rstudioapi::askForPassword()
+               else               params$password
 ) |>
   as_tibble()
 ```
