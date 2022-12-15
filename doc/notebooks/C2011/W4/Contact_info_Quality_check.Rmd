@@ -10,8 +10,8 @@ params:
 #| include: false
 library(tidyverse)
 library(xlsx)
+library(assertive.strings)
 ```
-
 
 # Introduction
 
@@ -33,4 +33,158 @@ contact_data <- read.xlsx(
   as_tibble()
 ```
 
+```{r variable-definitions}
+VARIABLES <- contact_data                   |>
+  colnames()                                |>
+  enframe(name = NULL, value = "variable") |>
+  add_column(
+    name = c(
+      "ID",
+      "alternative ID",
+      "proxy",
+      "name",
+      "surname",
+      "proxy's name",
+      "proxy's surname",
+      "address",
+      "town",
+      "zip code",
+      "comments",
+      "ID nº",
+      "Q0301a",
+      "Q0303",
+      "phone nº",
+      "alternative phone nº",
+      "Q0307",
+      "Q0306",
+      "Q0306b",
+      "Q0306c", 
+      "Q0306d",
+      "NA."
+    ),
+    .before = 1
+  ) |>
+  deframe()
+
+SURNAME   <- VARIABLES["surname"]
+NAME      <- VARIABLES["name"]
+ADDRESS   <- VARIABLES["address"]
+PHONE     <- VARIABLES["phone nº"]
+PHONE_ALT <- VARIABLES["alternative phone nº"]
+ZIP_CODE  <- VARIABLES["zip code"]
+TOWN      <- VARIABLES["town"]
+```
+
+# Quality checks
+
+The following data quality checks are performed on the contact information:
+
+## Participants' names
+
+### Names are complete
+
+Checks whether the surnames (variable `r SURNAME`) are filled in:
+
+```{r surnames}
+surname_sym <- sym(SURNAME)
+
+contact_data |> filter(is_non_missing_nor_empty_character(!!surname_sym))
+```
+
+There are no empty values in `r SURNAME`.
+
+### Duplicates
+
+Checks that the full names (variables `r NAME` and `r SURNAME`) are not
+duplicated.
+
+```{r name-duplicates}
+name_sym <- sym(NAME)
+
+contact_data                                     |>
+  unite("full_name", !!name_sym, !!surname_sym, sep = ' ') |>
+  group_by(full_name)                            |>
+  mutate(occurences = n())                       |>
+  filter(occurences > 1)
+```
+
+There are no duplicates in the full names.
+
+## Addresses
+
+### Duplicates
+
+Checks whether the addresses (variable `r ADDRESS`) are not duplicated.
+
+```{r address-duplicates}
+address_sym <- sym(ADDRESS)
+
+contact_data               |>
+  group_by(!!address_sym)  |>
+  mutate(occurences = n()) |>
+  filter(occurences > 1)
+```
+
+There are no duplicates in `r ADDRESS`.
+
+### Returned letters
+
+```{r returned-letters}
+## TODO: Where do we get the info from the returned letters?
+```
+
+### Complete address
+
+Checks that the variable `r ADDRESS` is complete.
+
+```{r complete-address}
+## TODO: Check the different components of the address
+
+```
+
+### Empty zip codes
+
+Checks that there are no empty zip codes (variable `r ZIP_CODE`).
+
+```{r zip-codes}
+zipcode_sym <- sym(ZIP_CODE)
+
+contact_data |> filter(is_non_missing_nor_empty_character(!!zipcode_sym))
+```
+
+There are no empty values in `r ZIP_CODE`.
+
+### Empty towns
+
+Checks that there are no empty towns (variable `r TOWN`).
+
+```{r zip-codes}
+town_sym <- sym(TOWN)
+
+contact_data |> filter(is_non_missing_nor_empty_character(!!town_sym))
+```
+
+There are no empty values in `r TOWN`.
+
+## Telephone numbers
+
+### Duplicates
+
+Checks that the telephone numbers (variables `r PHONE` and `r PHONE_ALT`) are
+not duplicated.
+
+```{r phone-duplicates}
+phone_sym    <- sym(PHONE)
+phonealt_sym <- sym(PHONE_ALT)
+
+contact_data                                      |>
+  select(InstanceID, !!phone_sym, !!phonealt_sym) |>
+  pivot_longer(cols = !InstanceID)                |>
+  filter(value |> is_not_na())                    |>
+  group_by(value)                                 |>
+  mutate(occurences = n())                        |>
+  filter(occurences > 1, any(InstanceID != first(InstanceID)))
+```
+
+The two cases shown have a duplicate telephone number.
 
