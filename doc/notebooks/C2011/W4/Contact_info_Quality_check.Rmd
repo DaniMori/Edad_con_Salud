@@ -1,16 +1,23 @@
 ---
 title: |
   Quality check of the personal data in 'Edad con Salud', Cohort 2011 - wave 4
-output: word_document
+output:
+  word_document:
+    df_print: kable
 params:
   password: 'password for the contact data file'
 ---
+
+```{r setup}
+knitr::opts_chunk$set(results = 'asis')
+```
 
 ```{r libraries}
 #| include: false
 library(tidyverse)
 library(xlsx)
 library(assertive.strings)
+library(assertive.base)
 ```
 
 # Introduction
@@ -34,8 +41,10 @@ contact_data <- read.xlsx(
 ```
 
 ```{r variable-definitions}
-VARIABLES <- contact_data                   |>
-  colnames()                                |>
+#| include: false
+
+VARIABLES <- contact_data                  |>
+  colnames()                               |>
   enframe(name = NULL, value = "variable") |>
   add_column(
     name = c(
@@ -66,6 +75,7 @@ VARIABLES <- contact_data                   |>
   ) |>
   deframe()
 
+ID_VAR    <- VARIABLES["ID"] |> sym()
 SURNAME   <- VARIABLES["surname"]
 NAME      <- VARIABLES["name"]
 ADDRESS   <- VARIABLES["address"]
@@ -81,31 +91,39 @@ The following data quality checks are performed on the contact information:
 
 ## Participants' names
 
-### Names are complete
+### Completeness
 
-Checks whether the surnames (variable `r SURNAME`) are filled in:
+Checks whether the surnames (variable ``r SURNAME``) are filled in:
 
 ```{r surnames}
 surname_sym <- sym(SURNAME)
 
-contact_data |> filter(is_non_missing_nor_empty_character(!!surname_sym))
+contact_data                                           |>
+  filter(is_missing_or_empty_character(!!surname_sym)) |>
+  select(!!ID_VAR, !!surname_sym)
 ```
 
-There are no empty values in `r SURNAME`.
+There are no empty values in ``r SURNAME``.
 
 ### Duplicates
 
-Checks that the full names (variables `r NAME` and `r SURNAME`) are not
+Checks that the full names (variables ``r NAME`` and ``r SURNAME``) are not
 duplicated.
 
 ```{r name-duplicates}
 name_sym <- sym(NAME)
 
-contact_data                                     |>
-  unite("full_name", !!name_sym, !!surname_sym, sep = ' ') |>
-  group_by(full_name)                            |>
-  mutate(occurences = n())                       |>
-  filter(occurences > 1)
+contact_data               |>
+  unite(
+    "full_name",
+    !!name_sym, !!surname_sym,
+    sep    = ' ',
+    remove = FALSE)        |>
+  group_by(full_name)      |>
+  mutate(occurences = n()) |>
+  ungroup()                |>
+  filter(occurences > 1)   |>
+  select(!!ID_VAR, !!name_sym, !!surname_sym)
 ```
 
 There are no duplicates in the full names.
@@ -114,7 +132,7 @@ There are no duplicates in the full names.
 
 ### Duplicates
 
-Checks whether the addresses (variable `r ADDRESS`) are not duplicated.
+Checks whether the addresses (variable ``r ADDRESS``) are not duplicated.
 
 ```{r address-duplicates}
 address_sym <- sym(ADDRESS)
@@ -122,56 +140,61 @@ address_sym <- sym(ADDRESS)
 contact_data               |>
   group_by(!!address_sym)  |>
   mutate(occurences = n()) |>
-  filter(occurences > 1)
+  ungroup()                |>
+  filter(occurences > 1)   |>
+  select(!!ID_VAR, !!address_sym)
 ```
 
-There are no duplicates in `r ADDRESS`.
+There are no duplicates in ``r ADDRESS``.
 
 ### Returned letters
 
 ```{r returned-letters}
-## TODO: Where do we get the info from the returned letters?
+## TODO: Compare with the information from the returned letters
 ```
 
 ### Complete address
 
-Checks that the variable `r ADDRESS` is complete.
+Checks that the variable ``r ADDRESS`` is complete.
 
 ```{r complete-address}
 ## TODO: Check the different components of the address
-
 ```
 
 ### Empty zip codes
 
-Checks that there are no empty zip codes (variable `r ZIP_CODE`).
+Checks that there are no empty zip codes (variable ``r ZIP_CODE``).
 
 ```{r zip-codes}
 zipcode_sym <- sym(ZIP_CODE)
 
-contact_data |> filter(is_non_missing_nor_empty_character(!!zipcode_sym))
+contact_data                                           |>
+  filter(is_missing_or_empty_character(!!zipcode_sym)) |>
+  select(!!ID_VAR, !!zipcode_sym)
 ```
 
-There are no empty values in `r ZIP_CODE`.
+There are no empty values in ``r ZIP_CODE``.
 
 ### Empty towns
 
-Checks that there are no empty towns (variable `r TOWN`).
+Checks that there are no empty towns (variable ``r TOWN``).
 
-```{r zip-codes}
+```{r towns}
 town_sym <- sym(TOWN)
 
-contact_data |> filter(is_non_missing_nor_empty_character(!!town_sym))
+contact_data                                        |>
+  filter(is_missing_or_empty_character(!!town_sym)) |>
+  select(!!ID_VAR, !!town_sym)
 ```
 
-There are no empty values in `r TOWN`.
+There are no empty values in ``r TOWN``.
 
 ## Telephone numbers
 
 ### Duplicates
 
-Checks that the telephone numbers (variables `r PHONE` and `r PHONE_ALT`) are
-not duplicated.
+Checks that the telephone numbers (variables ``r PHONE`` and ``r PHONE_ALT``)
+are not duplicated.
 
 ```{r phone-duplicates}
 phone_sym    <- sym(PHONE)
@@ -187,4 +210,3 @@ contact_data                                      |>
 ```
 
 The two cases shown have a duplicate telephone number.
-
