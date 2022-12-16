@@ -42,8 +42,8 @@ vignettes/*.pdf
 .Renviron
 
 # .Rmd outputs
-doc/*.html
-doc/*.docx
+*.html
+*.docx
 
 # Dataset outputs (for test files in some processes)
 *.dta
