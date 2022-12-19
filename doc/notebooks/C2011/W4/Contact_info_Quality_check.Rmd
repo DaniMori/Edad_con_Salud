@@ -9,15 +9,23 @@ params:
 ---
 
 ```{r setup}
-knitr::opts_chunk$set(results = 'asis')
+#| include: false
+
+knitr::opts_chunk$set(
+  results = 'asis',
+  echo    = FALSE
+)
 ```
 
 ```{r libraries}
 #| include: false
 library(tidyverse)
 library(xlsx)
+library(ecs.data)
+library(haven)
 library(assertive.strings)
 library(assertive.base)
+library(glue)
 ```
 
 # Introduction
@@ -29,15 +37,40 @@ cohort (i.e. *original cohort*) of the *Edad con Salud* project.
 ```{r load-data}
 #| include: false
 
-# The data is in a local path, and encrypted with a password.
-DATASET_PATH <- r"(~\Workspace\21057906DatosContacto20221213.xlsx)"
+# The contact data is in a local path (and password-protected).
+MAIN_DATASET_PATH   <- r"(~\Workspace\21057906DatosContacto20221213.xlsx)"
+RETMAIL_DATA_PATH   <- file.path(
+  read_ecs_folder("DOC"),
+  "Edad con salud - Ola 4",
+  "Participantes",
+  "Cohorte 2011",
+  "Incidencias muestra de seguimiento.xlsx"
+)
+INTERVIEW_DATA_PATH <- file.path(
+  read_ecs_folder("DB"),
+  "Ola_4",
+  "Cohorte 2011",
+  "rawdata_c2011w4.dta"
+)
+
 contact_data <- read.xlsx(
-  DATASET_PATH,
+  MAIN_DATASET_PATH,
   sheetIndex = 1,
   password   = if (interactive()) rstudioapi::askForPassword()
                else               params$password
 ) |>
   as_tibble()
+
+returned_mail_motives <- read.xlsx(
+  RETMAIL_DATA_PATH,
+  sheetIndex = "Cartas devueltas"
+) |>
+  as_tibble()
+
+interview_data <- read_stata(
+  INTERVIEW_DATA_PATH,
+  encoding = 'UTF-8'
+)
 ```
 
 ```{r variable-definitions}
@@ -75,7 +108,7 @@ VARIABLES <- contact_data                  |>
   ) |>
   deframe()
 
-ID_VAR    <- VARIABLES["ID"] |> sym()
+ID_VARS   <- VARIABLES[c("ID", "alternative ID")] |> syms() |> unname()
 SURNAME   <- VARIABLES["surname"]
 NAME      <- VARIABLES["name"]
 ADDRESS   <- VARIABLES["address"]
@@ -93,22 +126,22 @@ The following data quality checks are performed on the contact information:
 
 ### Completeness
 
-Checks whether the surnames (variable ``r SURNAME``) are filled in:
+Checks whether the surnames (variable ``r SURNAME``) are filled in.
 
 ```{r surnames}
 surname_sym <- sym(SURNAME)
 
 contact_data                                           |>
   filter(is_missing_or_empty_character(!!surname_sym)) |>
-  select(!!ID_VAR, !!surname_sym)
+  select(!!!ID_VARS, !!surname_sym)
 ```
 
 There are no empty values in ``r SURNAME``.
 
 ### Duplicates
 
-Checks that the full names (variables ``r NAME`` and ``r SURNAME``) are not
-duplicated.
+Checks that the full names (variables ``r NAME`` and ``r SURNAME`` concatenated)
+are not duplicated.
 
 ```{r name-duplicates}
 name_sym <- sym(NAME)
@@ -123,7 +156,7 @@ contact_data               |>
   mutate(occurences = n()) |>
   ungroup()                |>
   filter(occurences > 1)   |>
-  select(!!ID_VAR, !!name_sym, !!surname_sym)
+  select(!!!ID_VARS, !!name_sym, !!surname_sym)
 ```
 
 There are no duplicates in the full names.
@@ -142,23 +175,127 @@ contact_data               |>
   mutate(occurences = n()) |>
   ungroup()                |>
   filter(occurences > 1)   |>
-  select(!!ID_VAR, !!address_sym)
+  select(!!!ID_VARS, !!address_sym)
 ```
 
 There are no duplicates in ``r ADDRESS``.
 
 ### Returned letters
 
+Checks the address of the cases that correspond to returned letters with
+"incorrect address" or "incomplete address". The address in the letter and the
+contact information must be the same. For the letters with an address-related
+incidence, the addresses in the letters are manually checked.
+
 ```{r returned-letters}
-## TODO: Compare with the information from the returned letters
+town_sym <- sym(TOWN)
+zipcode_sym <- sym(ZIP_CODE)
+
+DIR_PATTERN <- "(?i)fallecid[oa]"
+
+returned_mail_motives <- returned_mail_motives |>
+  filter(ASUNTO |> str_detect(DIR_PATTERN, negate = TRUE))
+
+wrong_dir_data <- contact_data                                        |>
+  inner_join(returned_mail_motives, by = c(Q0002 = "ID"))             |>
+  select(InstanceID, Q0002, !!address_sym, !!zipcode_sym, !!town_sym) |>
+  arrange(Q0002)
+
+LETTERS_MISMATCHING_DIR <- tribble(
+  ~Q0002, ~mismatch,
+     225,        NA,
+     226,        NA,
+     281,      TRUE,
+     549,      TRUE,
+    1772,        NA,
+    1774,        NA,
+    1777,        NA,
+    2262,      TRUE,
+    2331,     FALSE,
+    2480,     FALSE,
+    2541,     FALSE,
+    2798,     FALSE,
+    2856,     FALSE,
+    2871,     FALSE,
+    2941,     FALSE,
+    2943,      TRUE,
+    2948,     FALSE,
+    2953,        NA,
+    2971,     FALSE,
+    3024,     FALSE,
+    3357,     FALSE,
+    3449,     FALSE,
+    3457,        NA,
+    3896,     FALSE, 
+    4037,        NA,
+    4670,     FALSE,
+    4675,        NA
+)
 ```
+
+The following addresses do not match the addresses in the letters returned;
+these addresses need to be double checked:
+
+```{r returned-letters-mismatches}
+wrong_dir_data                                     |>
+  left_join(LETTERS_MISMATCHING_DIR, by = "Q0002") |>
+  filter(mismatch)                                 |>
+  select(-mismatch)
+```
+
+### Incomplete interviews
+
+Checks the address of the participants that do not have a "complete interview"
+for any reason related to the address (e.g. "empty home").
+
+```{r}
+interview_data                                                  |>
+  transmute(q0007a_result_s3 = q0007a_result_s3 |> as_factor()) |>
+  filter(q0007a_result_s3 != "Completed interview")
+```
+
+No interview has a status different from "Completed interview".
 
 ### Complete address
 
 Checks that the variable ``r ADDRESS`` is complete.
+In order to this, we first separate the street (type), the number, and the rest
+of the information.
 
 ```{r complete-address}
-## TODO: Check the different components of the address
+# Patterns to extract the address components:
+STREETNUM_PATTERN  <- "(\\d{1,3}|S\\/N|SD/N)"
+SEPARATOR_PATTERN  <- "[\\s,\\.ºª\\-N]"
+STREETNAME_PATTERN <- glue("[^\\d]*(?={SEPARATOR_PATTERN}{STREETNUM_PATTERN})")
+EXTRA_PATTERN      <- glue("(?<={STREETNUM_PATTERN})[^\\d].+")
+
+split_addresses <- contact_data |> transmute(
+  !!!ID_VARS, !!address_sym,
+  address_num   = (!!address_sym) |> str_extract(STREETNUM_PATTERN),
+  address_name  = (!!address_sym) |> str_extract(STREETNAME_PATTERN),
+  address_extra = (!!address_sym) |> str_extract(EXTRA_PATTERN)
+)
+```
+
+The following addresses are incomplete, because they do not have an address
+number, and thus need to be double checked:
+
+```{r incomplete-address-out}
+split_addresses                                   |>
+  filter(if_any(address_num:address_name, is.na)) |>
+  select(!!!ID_VARS, !!address_sym)
+```
+
+The following addresses only have street name and number, so they may be
+incomplete and need to be double checked:
+
+```{r incomplete-address-out-extra}
+#| echo:    true
+#| results: hide
+split_addresses                    |>
+  filter(address_extra |> is.na()) |>
+  select(!!!ID_VARS, !!address_sym)
+## TODO: Filter out the ones that are known to be single houses
 ```
 
 ### Empty zip codes
@@ -166,11 +303,9 @@ Checks that the variable ``r ADDRESS`` is complete.
 Checks that there are no empty zip codes (variable ``r ZIP_CODE``).
 
 ```{r zip-codes}
-zipcode_sym <- sym(ZIP_CODE)
-
 contact_data                                           |>
   filter(is_missing_or_empty_character(!!zipcode_sym)) |>
-  select(!!ID_VAR, !!zipcode_sym)
+  select(!!!ID_VARS, !!zipcode_sym)
 ```
 
 There are no empty values in ``r ZIP_CODE``.
@@ -180,11 +315,9 @@ There are no empty values in ``r ZIP_CODE``.
 Checks that there are no empty towns (variable ``r TOWN``).
 
 ```{r towns}
-town_sym <- sym(TOWN)
-
 contact_data                                        |>
   filter(is_missing_or_empty_character(!!town_sym)) |>
-  select(!!ID_VAR, !!town_sym)
+  select(!!!ID_VARS, !!town_sym)
 ```
 
 There are no empty values in ``r TOWN``.
@@ -200,13 +333,17 @@ are not duplicated.
 phone_sym    <- sym(PHONE)
 phonealt_sym <- sym(PHONE_ALT)
 
-contact_data                                      |>
-  select(InstanceID, !!phone_sym, !!phonealt_sym) |>
-  pivot_longer(cols = !InstanceID)                |>
-  filter(value |> is_not_na())                    |>
-  group_by(value)                                 |>
-  mutate(occurences = n())                        |>
-  filter(occurences > 1, any(InstanceID != first(InstanceID)))
+id_var <- ID_VARS[[1]]
+
+contact_data                                               |>
+  select(!!!ID_VARS, !!phone_sym, !!phonealt_sym)          |>
+  pivot_longer(cols = c(!!phone_sym, !!phonealt_sym))      |>
+  filter(value |> is_not_na())                             |>
+  group_by(value)                                          |>
+  mutate(occurences = n())                                 |>
+  filter(occurences > 1, any(!!id_var != first(!!id_var))) |>
+  pivot_wider(id_cols = c(!!!ID_VARS))
 ```
 
-The two cases shown have a duplicate telephone number.
+The two cases shown have the same telephone number and need to be double
+checked.
