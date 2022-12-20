@@ -1,0 +1,98 @@
+---
+title: "Check of the field progress report"
+author: "Daniel Morillo"
+date: "2022-12-20"
+output:
+  html_document:
+    df_print: kable
+---
+
+```{r setup}
+#| include: false
+
+knitr::opts_chunk$set(
+  results = 'asis',
+  include = FALSE,
+  echo    = FALSE
+)
+```
+
+```{r libraries}
+#| include: false
+library(tidyverse)
+library(readxl)
+library(xlsx)
+library(ecs.data)
+library(lubridate)
+```
+
+Checks the fieldwork result code for the returned letters that were
+contacted but for which the interviews were not complete:
+
+```{r load-data}
+RETMAIL_DATA_PATH   <- file.path(
+  read_ecs_folder("DOC"),
+  "Edad con salud - Ola 4",
+  "Participantes",
+  "Cohorte 2011",
+  "Incidencias muestra de seguimiento.xlsx"
+)
+FIELDWORK_DATA_PATH <- file.path(
+  read_ecs_folder("DOC"),
+  "Edad con salud - Ola 4",
+  "Bases de datos",
+  "Cohorte 2011",
+  "Progreso del trabajo de campo",
+  "Final",
+  "20221214-FieldProgressReport-CálculoRatio.xlsx"
+)
+
+returned_mail_motives <- read_excel(
+  RETMAIL_DATA_PATH,
+  sheet = "Cartas devueltas"
+)             |>
+  as_tibble() |>
+  mutate(
+    ASUNTO = ASUNTO |> trimws()
+  )           |>
+  filter(year(`FECHA DEVOLUCIÓN`) == 2022) # Keep only letters in last delivery
+
+fieldwork_data <- read_excel(
+  FIELDWORK_DATA_PATH,
+  sheet = "Hoja1",
+  skip  = 8
+) |>
+  rename(`Fieldwork result code` = `Final Result Code Household (Q0007a)...8`)
+
+result_codes <- read_excel(
+  FIELDWORK_DATA_PATH,
+  sheet = "CÓDIGOS COURAGE",
+  range = 'F6:F25'
+) |>
+  separate(
+    `Final Result Code`,
+    into    = c("Fieldwork result code", "Fieldwork result"),
+    sep     = '= ?',
+    convert = TRUE
+  )
+```
+
+```{r returned-letters}
+#| include: true
+DIR_PATTERN <- "(?i)fallecid[oa]"
+
+returned_mail_motives <- returned_mail_motives |>
+  filter(ASUNTO |> str_detect(DIR_PATTERN, negate = TRUE))
+
+returned_mail_motives                                            |>
+  left_join(fieldwork_data, by = c(ID = "Household Id (Q0002)")) |>
+  filter(`Fieldwork result code` != "1")                         |>
+  left_join(result_codes, by = "Fieldwork result code")          |>
+  arrange(ID)                                                    |>
+  select(
+    ID, 
+    `Return motive`         = ASUNTO, 
+    `Fieldwork result code`,
+    `Fieldwork result`
+  )
+```
