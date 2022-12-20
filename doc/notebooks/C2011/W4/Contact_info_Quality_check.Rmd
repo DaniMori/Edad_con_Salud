@@ -200,18 +200,14 @@ returned_mail_motives <- returned_mail_motives |>
 
 wrong_dir_data <- contact_data                                        |>
   inner_join(returned_mail_motives, by = c(Q0002 = "ID"))             |>
-  select(InstanceID, Q0002, !!address_sym, !!zipcode_sym, !!town_sym) |>
+  select(!!!ID_VARS, !!address_sym, !!zipcode_sym, !!town_sym, ASUNTO) |>
   arrange(Q0002)
 
 LETTERS_MISMATCHING_DIR <- tribble(
   ~Q0002, ~mismatch,
-     225,        NA,
-     226,        NA,
      281,      TRUE,
      549,      TRUE,
-    1772,        NA,
-    1774,        NA,
-    1777,        NA,
+    1772,        NA, # TODO: Check whether `NA` is mismatch
     2262,      TRUE,
     2331,     FALSE,
     2480,     FALSE,
@@ -222,26 +218,36 @@ LETTERS_MISMATCHING_DIR <- tribble(
     2941,     FALSE,
     2943,      TRUE,
     2948,     FALSE,
-    2953,        NA,
     2971,     FALSE,
     3024,     FALSE,
     3357,     FALSE,
     3449,     FALSE,
-    3457,        NA,
     3896,     FALSE, 
-    4037,        NA,
     4670,     FALSE,
-    4675,        NA
+    4675,     FALSE
 )
+
+wrong_dir_data <- wrong_dir_data |>
+  left_join(LETTERS_MISMATCHING_DIR, by = "Q0002")
 ```
 
 The following addresses do not match the addresses in the letters returned;
-these addresses need to be double checked:
+please double check whether the participant has moved out to the new address
+listed below:
 
 ```{r returned-letters-mismatches}
-wrong_dir_data                                     |>
-  left_join(LETTERS_MISMATCHING_DIR, by = "Q0002") |>
-  filter(mismatch)                                 |>
+wrong_dir_data     |>
+  filter(mismatch) |>
+  select(-mismatch, -ASUNTO)
+```
+
+The following addresses match the addresses in the letters returned;
+please double check whether the address listed below is correct, or update it
+otherwise:
+
+```{r returned-letters-matches}
+wrong_dir_data      |>
+  filter(!mismatch) |>
   select(-mismatch)
 ```
 
