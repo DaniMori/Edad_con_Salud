@@ -294,10 +294,11 @@ split_addresses                                   |>
   select(!!!ID_VARS, !!address_sym)
 ```
 
-The following addresses only have street name and number, so they may be
-incomplete and need to be double checked:
+<!-- The following addresses only have street name and number, so they may be
+incomplete and need to be double checked: -->
 
 ```{r incomplete-address-out-extra}
+#| include: false
 #| echo:    true
 #| results: hide
 split_addresses                    |>
