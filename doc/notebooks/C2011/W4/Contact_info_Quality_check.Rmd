@@ -26,6 +26,7 @@ library(haven)
 library(assertive.strings)
 library(assertive.base)
 library(glue)
+library(lubridate)
 ```
 
 # Introduction
@@ -64,8 +65,9 @@ contact_data <- read.xlsx(
 returned_mail_motives <- read.xlsx(
   RETMAIL_DATA_PATH,
   sheetIndex = "Cartas devueltas"
-) |>
-  as_tibble()
+)             |>
+  as_tibble() |>
+  filter(year(FECHA.DEVOLUCIÓN) == 2022) # Keep only letters in last delivery
 
 interview_data <- read_stata(
   INTERVIEW_DATA_PATH,
