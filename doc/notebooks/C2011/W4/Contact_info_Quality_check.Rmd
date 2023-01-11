@@ -207,7 +207,7 @@ LETTERS_MISMATCHING_DIR <- tribble(
   ~Q0002, ~mismatch,
      281,      TRUE,
      549,      TRUE,
-    1772,        NA, # TODO: Check whether `NA` is mismatch
+    1772,     FALSE,
     2262,      TRUE,
     2331,     FALSE,
     2480,     FALSE,
