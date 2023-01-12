@@ -21,6 +21,7 @@ knitr::opts_chunk$set(
 #| include: false
 library(tidyverse)
 library(xlsx)
+library(readxl)
 library(ecs.data)
 library(haven)
 library(assertive.strings)
@@ -47,11 +48,14 @@ RETMAIL_DATA_PATH   <- file.path(
   "Cohorte 2011",
   "Incidencias muestra de seguimiento.xlsx"
 )
-INTERVIEW_DATA_PATH <- file.path(
-  read_ecs_folder("DB"),
-  "Ola_4",
+FIELDWORK_DATA_PATH <- file.path(
+  read_ecs_folder("DOC"),
+  "Edad con salud - Ola 4",
+  "Bases de datos",
   "Cohorte 2011",
-  "rawdata_c2011w4.dta"
+  "Progreso del trabajo de campo",
+  "Final",
+  "20221214-FieldProgressReport-CálculoRatio.xlsx"
 )
 
 contact_data <- read.xlsx(
@@ -69,10 +73,27 @@ returned_mail_motives <- read.xlsx(
   as_tibble() |>
   filter(year(FECHA.DEVOLUCIÓN) == 2022) # Keep only letters in last delivery
 
-interview_data <- read_stata(
-  INTERVIEW_DATA_PATH,
-  encoding = 'UTF-8'
-)
+fieldwork_data <- read_excel(
+  FIELDWORK_DATA_PATH,
+  sheet = "Hoja1",
+  skip  = 8
+) |>
+  rename(`Fieldwork result code` = `Final Result Code Household (Q0007a)...8`)
+
+result_codes <- read_excel(
+  FIELDWORK_DATA_PATH,
+  sheet = "CÓDIGOS COURAGE",
+  range = 'F6:F25'
+) |>
+  separate(
+    `Final Result Code`,
+    into    = c("Fieldwork result code", "Fieldwork result"),
+    sep     = '= ?',
+    convert = TRUE
+  )
+
+fieldwork_data <- fieldwork_data |>
+  left_join(result_codes, by = "Fieldwork result code")
 ```
 
 ```{r variable-definitions}
@@ -118,6 +139,12 @@ PHONE     <- VARIABLES["phone nº"]
 PHONE_ALT <- VARIABLES["alternative phone nº"]
 ZIP_CODE  <- VARIABLES["zip code"]
 TOWN      <- VARIABLES["town"]
+
+# These codes are:
+#   07=Unable to locate household or individual respondent
+#   11=Unsafe or dangerous area or no access to household/indivudual respondent
+#   21= Address doesn't exist
+ADDRESS_RELATED_CODES <- c(7, 11, 21) # TODO: Consider code 10?
 ```
 
 # Quality checks
@@ -254,15 +281,28 @@ wrong_dir_data      |>
 ### Incomplete interviews
 
 Checks the address of the participants that do not have a "complete interview"
-for any reason related to the address (e.g. "empty home").
+for any reason related to the address; the relevant codes are:
 
-```{r}
-interview_data                                                  |>
-  transmute(q0007a_result_s3 = q0007a_result_s3 |> as_factor()) |>
-  filter(q0007a_result_s3 != "Completed interview")
+```{r address-related-codes}
+result_codes |> filter(`Fieldwork result code` %in% ADDRESS_RELATED_CODES)
 ```
 
-No interview has a status different from "Completed interview".
+The following cases have one of the result codes listed above:
+
+```{r}
+contact_data                                                         |>
+  right_join(fieldwork_data, by = c(Q0002 = "Household Id (Q0002)")) |>
+  right_join(returned_mail_motives, by = c(Q0002 = "ID"))            |> # TODO: Delete if all interviews have to be considered
+  filter(`Fieldwork result code` %in% ADDRESS_RELATED_CODES)         |>
+  select(
+    !!!ID_VARS,
+    `Fieldwork result code`, `Fieldwork result`,
+    `Return motive` = ASUNTO # TODO: Delete if all interviews have to be considered
+  )
+```
+
+Contact information for these participants has not been provided (cases are not
+in the contact information file). These cases need to be double checked.
 
 ### Complete address
 
