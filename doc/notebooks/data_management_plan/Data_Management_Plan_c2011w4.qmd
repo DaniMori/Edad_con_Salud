@@ -290,8 +290,10 @@ column headers, in the first row (columns A to I):
     datasets, `NA` will be filled-in.
 
 -   `REMARKS (if any)`: Any remarks about this update that don't fit in any of
-    the other fields must be stated here. The more information provided, the
-    better. If there are no remarks, `NA` will be filled-in.
+    the other fields must be stated here (the more information provided, the
+    better). When changes are requested to the data provider, ALL of them must
+    be explicitly detailed in this field. If there are no remarks, `NA` will be
+    filled-in.
 
 -   `IMPLEMENTATION DATE`: Date when the change is implemented and the dataset
     updated.
