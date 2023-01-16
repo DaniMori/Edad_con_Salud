@@ -1,0 +1,243 @@
+---
+title:  "Dataset update checks"
+author: "Daniel Morillo"
+date:   16-01-2026
+format:
+  html:
+    toc: true
+    df-print: paged
+  docx:
+    toc: true
+    df-print: kable
+knitr:
+  opts_chunk:
+    echo: true
+    results: asis
+    cache: true
+---
+
+```{r libraries}
+library(magrittr)
+library(tidyverse)
+library(ecs.data)
+library(haven)
+library(readxl)
+library(readxl)
+library(labelled)
+library(waldo)
+```
+
+```{r constants}
+# File system constants:
+
+## Folders:
+DATASET_FOLDER <- read_ecs_folder("DB")
+C2019W1_FOLDER <- file.path(DATASET_FOLDER, "Ola_4", "Cohorte 2011")
+HISTORY_FOLDER <- file.path(C2019W1_FOLDER, "history")
+
+## File paths:
+RAW_DS_PATH    <- file.path(C2019W1_FOLDER, "rawdata_c2011w4.dta")
+BACKUP_PATH    <- file.path(HISTORY_FOLDER, "snapshot_2023-01-13_09-28.dta")
+CHANGELOG_PATH <- file.path(C2019W1_FOLDER, "Changelog_DB_c2011w4.xlsx")
+```
+
+# Introduction
+
+This document checks the updates performed on the **Wave 4, Cohort 2011**
+interview dataset. It compares the updated version with the latest version of
+the raw dataset with the most recent historical version. The expected result is
+that all the changes to the dataset reported in the
+[changelog file](https://dauam-my.sharepoint.com/:x:/r/personal/marta_miret_uam_es/Documents/Edad%20con%20Salud/Bases%20de%20datos%20maestras%20Edad%20con%20Salud/Ola_4/Cohorte%202011/Changelog_DB_c2011w4.xlsx?d=w537fd6d69d52438e89c84c8d97aee2b7&csf=1&web=1&e=hvIgza)
+are performed in the update, and that no other changes have been made.
+
+**NOTE:** This document is only a proof-of-concept, that compares the raw
+dataset file with the latest historical version at the date indicated in the
+document metadata (16-01-2023). The latest dataset file and historical version
+backup are from 13-01-2023, 13:09.
+
+# Dataset loading
+
+As explained in the _C2011 W4 Data Management Plan_, files are in Stata 13, and
+therefore the UTF-8 encoding must be explicitly stated when reading the datasets
+into R.
+
+```{r load-data}
+# Load the two datasets
+updated_dataset <- read_stata(RAW_DS_PATH, encoding = 'UTF-8')
+backup_dataset  <- read_stata(BACKUP_PATH, encoding = 'UTF-8')
+
+# Load the changelog file to read in the changes in the latest update:
+changelog <- read_excel(CHANGELOG_PATH)
+```
+
+# Changes performed
+
+According to the changelog file, the changes from the latest historical version
+to the latest updated dataset must be the following:
+
+```{r list-latest-changes}
+changelog                  |>
+  slice(n())               |>
+  pull(`REMARKS (if any)`) |>
+  cat()
+```
+
+## Check of the listed updates
+
+The two datasets are compared to see if the changes listed have been performed.
+
+```{r check-updates}
+# Interviews added:
+new_interviews <- updated_dataset |> anti_join(backup_dataset, by = "ID_ECS")
+n_new          <- new_interviews |> nrow()
+
+# Interviews discarded:
+discarded_interviews <- backup_dataset      |>
+  anti_join(updated_dataset, by = "ID_ECS") |>
+  select(ID_ECS)
+n_discarded          <- discarded_interviews |> nrow()
+
+# Check changed response codes:
+code_check_updated <- updated_dataset |> select(ID_ECS, q1016_highest_s3)
+code_check_backup  <- backup_dataset  |> select(ID_ECS, q1016_highest_s3)
+code_check         <- full_join(
+  code_check_backup, code_check_updated,
+  by     = "ID_ECS",
+  suffix = c("_old", "_new")
+)
+changed_codes <- code_check                            |>
+  filter(q1016_highest_s3_new != q1016_highest_s3_old) |>
+  count(q1016_highest_s3_new, q1016_highest_s3_old)
+extra_change <- code_check |> semi_join(
+  changed_codes |> filter(q1016_highest_s3_old == 0),
+  by = c("q1016_highest_s3_new", "q1016_highest_s3_old")
+)
+extra_change_id <- extra_change |> pull(ID_ECS)
+```
+
+### Number of new interviews: `r n_new`
+
+### Number of discarded interviews: `r n_discarded`
+
+IDs of the discarded interviews:
+
+```{r discarded-ids}
+discarded_interviews
+```
+
+### Codes changed in variable `q1016`:
+
+```{r codes-changed}
+changed_codes
+```
+
+The following case has an unexpected code:
+
+```{r extra-changed-code}
+extra_change
+```
+
+## Check for additional changes
+
+In order to verify that there are no additional changes, we first revert all
+the changes to make the two datasets (presumably) equal.
+
+```{r revert-changes}
+reverted_dataset <- updated_dataset |>
+  bind_rows( # Add back discarded interivews
+    backup_dataset |> semi_join(discarded_interviews, by = "ID_ECS")
+  )                                 |>
+  full_join( # Add an "order" column to reorder in the same way as the backup
+    backup_dataset |> transmute(
+      ID_ECS,
+      order = ID_ECS |>
+        factor()     |> fct_inorder()
+    ),
+    by = "ID_ECS"
+  )                                 |>
+  arrange(order)                    |> # Order according to backup and
+  select(-order)                    |> #   discard "order" variable
+  mutate( # Revert the values in q1016
+    q1016_highest_s3 = q1016_highest_s3 |>
+      recode(`6` = 7, `7` = 6)          |>
+      if_else(!ID_ECS %in% extra_change_id, true = _, 0)
+  )
+```
+
+Then, we check for additional differences.
+
+```{r additional-differences}
+#| results: hide
+compare(
+  backup_dataset,
+  reverted_dataset,
+  x_arg = "backup",
+  y_arg = "updated",
+  list_as_map = TRUE
+)
+```
+
+The automatic `waldo::compare()` function gives a very large output, which means
+there is a large amount of differences. To get the detail, we explore these
+differences more systematically.
+
+```{r explore-additional-differences}
+# Differences in dataset attributes:
+backup_attributes  <- backup_dataset   |> attributes()
+updated_attributes <- reverted_dataset |> attributes()
+diff_attributes    <- compare(
+  backup_attributes, updated_attributes,
+  max_diffs   = Inf,
+  x_arg       = "backup",
+  y_arg       = "updated",
+  list_as_map = TRUE
+)
+
+# Differences in variable attributes:
+backup_var_attrs  <- backup_dataset   |> map(attributes)
+updated_var_attrs <- reverted_dataset |> map(attributes)
+diff_var_attrs    <- compare(
+  backup_var_attrs, updated_var_attrs,
+  max_diffs   = Inf,
+  x_arg       = "backup",
+  y_arg       = "updated",
+  list_as_map = TRUE
+)
+
+# Differences in variable values:
+var_names <- backup_dataset |>
+  select(-ID_ECS)           |>
+  colnames()                |>
+  set_names()
+
+diff_values <- var_names |> imap_dfr(
+  ~{
+    backup_var  <- backup_dataset   |> select(ID_ECS, old = !!sym(.x))
+    updated_var <- reverted_dataset |> select(ID_ECS, new = !!sym(.x))
+    
+    full_join(backup_var, updated_var, by = "ID_ECS") |>
+      filter(old != new)                              |>
+      mutate(
+        across(
+          -ID_ECS,
+          ~if (is.labelled(.)) as_factor(.) |> as.character() else as.character(.)
+        )
+      )
+  },
+  .id = "Variable"
+)
+n_diff_values <- diff_values |> nrow()
+```
+
+### Differences in values (total = `r n_diff_values`):
+
+```{r diff-values}
+diff_values
+```
+
+### Differences in variable attributes:
+
+```{r diff-var-attrs}
+#| results: markup
+diff_var_attrs
+```
