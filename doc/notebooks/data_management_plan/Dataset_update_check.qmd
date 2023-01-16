@@ -6,6 +6,7 @@ format:
   html:
     toc: true
     df-print: paged
+    self-contained: true
   docx:
     toc: true
     df-print: kable
