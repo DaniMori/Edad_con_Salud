@@ -40,7 +40,7 @@ cohort (i.e. *original cohort*) of the *Edad con Salud* project.
 #| include: false
 
 # The contact data is in a local path (and password-protected).
-MAIN_DATASET_PATH   <- r"(~\Workspace\21057906DatosContacto20221213.xlsx)"
+MAIN_DATASET_PATH   <- r"(~\Workspace\21057906DatosContacto20230116.xlsx)"
 RETMAIL_DATA_PATH   <- file.path(
   read_ecs_folder("DOC"),
   "Edad con salud - Ola 4",
