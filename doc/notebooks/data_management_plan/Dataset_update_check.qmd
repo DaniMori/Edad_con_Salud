@@ -220,7 +220,7 @@ diff_values <- var_names |> imap_dfr(
       mutate(
         across(
           -ID_ECS,
-          ~if (is.labelled(.)) as_factor(.) |> as.character() else as.character(.)
+          ~if (is.labelled(.)) as_factor(.) else as.character(.) |> as_factor()
         )
       )
   },
