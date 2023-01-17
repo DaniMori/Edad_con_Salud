@@ -25,6 +25,7 @@ library(haven)
 library(readxl)
 library(readxl)
 library(labelled)
+library(glue)
 library(waldo)
 ```
 
@@ -40,6 +41,10 @@ HISTORY_FOLDER <- file.path(C2019W1_FOLDER, "history")
 RAW_DS_PATH    <- file.path(C2019W1_FOLDER, "rawdata_c2011w4.dta")
 BACKUP_PATH    <- file.path(HISTORY_FOLDER, "snapshot_2023-01-13_09-28.dta")
 CHANGELOG_PATH <- file.path(C2019W1_FOLDER, "Changelog_DB_c2011w4.xlsx")
+
+
+# Dataset constants:
+OVERWRITTEN_INTERVIEWS <- tibble(ID_ECS = c(902, 918))
 ```
 
 # Introduction
@@ -163,7 +168,24 @@ reverted_dataset <- updated_dataset |>
       recode(`6` = 7, `7` = 6)          |>
       if_else(!ID_ECS %in% extra_change_id, true = _, 0)
   )
+
+overwritten_interviews_out <- OVERWRITTEN_INTERVIEWS |>
+  pull()                                             |>
+  glue_collapse(sep = " and ")
 ```
+
+Also, there are two interviews that apparently have been updated,
+`r overwritten_interviews_out`, and thus many of their values will be different.
+To make the output clearer, we discard these interviews before comparing the two
+versions.
+
+```{r discard-overwritten-interviews}
+backup_dataset <- backup_dataset |>
+  anti_join(OVERWRITTEN_INTERVIEWS, by = "ID_ECS")
+reverted_dataset <- reverted_dataset |>
+  anti_join(OVERWRITTEN_INTERVIEWS, by = "ID_ECS")
+```
+
 
 Then, we check for additional differences.
 
