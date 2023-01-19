@@ -295,7 +295,7 @@ contact_data                                                         |>
   right_join(returned_mail_motives, by = c(Q0002 = "ID"))            |> # TODO: Delete if all interviews have to be considered
   filter(`Fieldwork result code` %in% ADDRESS_RELATED_CODES)         |>
   select(
-    !!!ID_VARS,
+    Q0002,
     `Fieldwork result code`, `Fieldwork result`,
     `Return motive` = ASUNTO # TODO: Delete if all interviews have to be considered
   )
