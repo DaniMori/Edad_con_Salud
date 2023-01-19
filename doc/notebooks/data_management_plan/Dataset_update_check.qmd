@@ -217,8 +217,8 @@ diff_attributes    <- compare(
 )
 
 # Differences in variable attributes:
-backup_var_attrs  <- backup_dataset   |> map(attributes)
-updated_var_attrs <- reverted_dataset |> map(attributes)
+backup_var_attrs  <- backup_dataset  |> map(attributes)
+updated_var_attrs <- updated_dataset |> map(attributes)
 diff_var_attrs    <- compare(
   backup_var_attrs, updated_var_attrs,
   max_diffs   = Inf,
@@ -258,9 +258,9 @@ n_diff_values <- diff_values |> nrow()
 diff_values
 ```
 
-### Differences in variable attributes:
-
 ```{r diff-var-attrs}
 #| results: markup
 diff_var_attrs
+
+# There are no difference attributes
 ```
