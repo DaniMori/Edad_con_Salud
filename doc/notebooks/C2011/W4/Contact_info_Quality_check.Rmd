@@ -55,7 +55,7 @@ FIELDWORK_DATA_PATH <- file.path(
   "Cohorte 2011",
   "Progreso del trabajo de campo",
   "Final",
-  "20221214-FieldProgressReport-CálculoRatio.xlsx"
+  "20230116-FieldProgressReport-CálculoRatio.xlsx"
 )
 
 contact_data <- read.xlsx(
