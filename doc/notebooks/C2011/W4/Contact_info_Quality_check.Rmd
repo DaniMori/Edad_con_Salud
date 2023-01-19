@@ -278,32 +278,6 @@ wrong_dir_data      |>
   select(-mismatch)
 ```
 
-### Incomplete interviews
-
-Checks the address of the participants that do not have a "complete interview"
-for any reason related to the address; the relevant codes are:
-
-```{r address-related-codes}
-result_codes |> filter(`Fieldwork result code` %in% ADDRESS_RELATED_CODES)
-```
-
-The following cases have one of the result codes listed above:
-
-```{r}
-contact_data                                                         |>
-  right_join(fieldwork_data, by = c(Q0002 = "Household Id (Q0002)")) |>
-  right_join(returned_mail_motives, by = c(Q0002 = "ID"))            |> # TODO: Delete if all interviews have to be considered
-  filter(`Fieldwork result code` %in% ADDRESS_RELATED_CODES)         |>
-  select(
-    Q0002,
-    `Fieldwork result code`, `Fieldwork result`,
-    `Return motive` = ASUNTO # TODO: Delete if all interviews have to be considered
-  )
-```
-
-Contact information for these participants has not been provided (cases are not
-in the contact information file). These cases need to be double checked.
-
 ### Complete address
 
 Checks that the variable ``r ADDRESS`` is complete.
