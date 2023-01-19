@@ -259,8 +259,8 @@ wrong_dir_data <- wrong_dir_data |>
 ```
 
 The following addresses do not match the addresses in the letters returned;
-please double check whether the participant has moved out to the new address
-listed below:
+**please double check whether the participant has moved out to the new address
+listed below**:
 
 ```{r returned-letters-mismatches}
 wrong_dir_data     |>
@@ -269,8 +269,8 @@ wrong_dir_data     |>
 ```
 
 The following addresses match the addresses in the letters returned;
-please double check whether the address listed below is correct, or update it
-otherwise:
+**please double check whether the address listed below is correct, or update it
+otherwise**:
 
 ```{r returned-letters-matches}
 wrong_dir_data      |>
@@ -299,8 +299,8 @@ split_addresses <- contact_data |> transmute(
 )
 ```
 
-The following addresses are incomplete, because they do not have an address
-number, and thus need to be double checked:
+The following addresses are incomplete, because **they do not have an address
+number, and thus need to be double checked**:
 
 ```{r incomplete-address-out}
 split_addresses                                   |>
@@ -368,5 +368,5 @@ contact_data                                               |>
   pivot_wider(id_cols = c(!!!ID_VARS))
 ```
 
-The two cases shown have the same telephone number and need to be double
-checked.
+**The two cases shown have the same telephone number and need to be double
+checked**.
