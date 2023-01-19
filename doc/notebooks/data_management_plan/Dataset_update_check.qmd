@@ -238,8 +238,8 @@ diff_values <- var_names |> imap_dfr(
     backup_var  <- backup_dataset   |> select(ID_ECS, old = !!sym(.x))
     updated_var <- reverted_dataset |> select(ID_ECS, new = !!sym(.x))
     
-    full_join(backup_var, updated_var, by = "ID_ECS") |>
-      filter(old != new)                              |>
+    full_join(backup_var, updated_var, by = "ID_ECS")   |>
+      filter((old != new) | (is.na(old) != is.na(new))) |>
       mutate(
         across(
           -ID_ECS,
