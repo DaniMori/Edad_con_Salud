@@ -1,0 +1,92 @@
+---
+title: "Personal data update checks, 'Edad con Salud', Cohort 2011 - wave 4\n"
+author: "Daniel Morillo"
+date: "02-02-2023"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+    self_contained: yes
+  word_document:
+    df_print: kable
+params:
+  password: password for the contact data file
+---
+
+```{r setup}
+#| include: false
+
+knitr::opts_chunk$set(
+  results = 'asis',
+  echo    = FALSE
+)
+```
+
+```{r libraries}
+#| include: false
+
+library(magrittr)
+library(tidyverse)
+library(xlsx)
+library(labelled)
+library(waldo)
+```
+
+```{r constants}
+# File system constants:
+
+## Folders:
+OLD_DATASET_PATH  <- r"(~\Workspace\21057906DatosContacto20230116.xlsx)"
+MAIN_DATASET_PATH <- r"(~\Workspace\21057906DatosContacto20230202.xlsx)"
+```
+
+```{r load-data}
+password <- if (interactive()) rstudioapi::askForPassword() else params$password
+
+# Load the two datasets
+contact_data_old <- read.xlsx(
+  OLD_DATASET_PATH,
+  sheetIndex = 1,
+  password   = password
+) |>
+  as_tibble()
+contact_data_new <- read.xlsx(
+  MAIN_DATASET_PATH,
+  sheetIndex = 1,
+  password   = password
+) |>
+  as_tibble()
+```
+
+```{r explore-differences}
+# Differences in variable values:
+var_names <- contact_data_old |>
+  select(-Q0002)             |>
+  colnames()                  |>
+  set_names()
+
+diff_values <- var_names |> imap_dfr(
+  ~{
+    backup_var  <- contact_data_old |> select(Q0002, old = !!sym(.x))
+    updated_var <- contact_data_new |> select(Q0002, new = !!sym(.x))
+    
+    full_join(backup_var, updated_var, by = "Q0002")    |>
+      filter((old != new) | (is.na(old) != is.na(new))) |>
+      mutate(
+        across(
+          -Q0002,
+          ~if (is.labelled(.)) as_factor(.) else as.character(.) |> as_factor()
+        )
+      )
+  },
+  .id = "Variable"
+)
+n_diff_values <- diff_values |> nrow()
+```
+
+# Differences in values (total = `r n_diff_values`):
+
+```{r diff-values}
+diff_values
+```
