@@ -195,15 +195,16 @@ saveold "[FILE_PATH]", replace version(13)
     Stata 13 files, so that the text variables and other literal strings are
     properly enconded, i.e.:
 
-``` r
-have::read_dta("[FILE_PATH]", encoding = 'UTF-8')
-```
-
-For writing files, the version of Stata must be specified, i.e.:
-
-``` r
-have::write_dta([dataset_object], "[FILE_PATH]", version = 13)
-```
+    ``` r
+    haven::read_dta("[FILE_PATH]", encoding = 'UTF-8')
+    ```
+    
+    For writing files from the R session, the version of Stata must be
+    specified, i.e.:
+    
+    ``` r
+    haven::write_dta([dataset_object], "[FILE_PATH]", version = 13)
+    ```
 
 **NOTE:** In all the previous code templates in this section, `[FILE_PATH]`
 stands for the path to the dataset file path. `[dataset_object]` represents the
@@ -232,7 +233,7 @@ and day both with a trailing zero if necessary), `HH` the hour in 24-hour
 format, and `mm` the minutes. Note that the date and time components are
 separated by an *underscore* character (`_`) while the components within the
 date and within the time are separated by *dashes* (`-`). Additionally, the
-times will be given in *GMT*.
+times will be given in _CET_ (the mainland local time in Spain).
 
 Below are two examples of (hypotetical) historical dataset file paths, to help
 clarify the meaning of the different patterns:
@@ -360,8 +361,8 @@ access permission to the changelog files, as detailed below.
 ### Permissions of the different roles
 
 @tbl-roles below summarizes the different roles and the access levels of each
-one to the different elelments. Please not that, when an access level is not
-explcitly stated for an element, it inherits the permissions from its *parent
+one to the different elements. Please not that, when an access level is not
+explicitly stated for an element, it inherits the permissions from its *parent
 folder*.
 
 | Role                   | main folder   | changelog file | history folder |
@@ -380,7 +381,7 @@ In order to update the dataset files, a process consisting of certain predefined
 steps must be followed. Please note, this process involves writing in the
 `history` folder(s), so it must be done by a user with the *project owner* role.
 In the case of the first steps (1-3), they are performed by any project member
-with role *project researcher*, *data curator*, *data owner*, or *porject owner*
+with role *project researcher*, *data curator*, *data owner*, or *project owner*
 (as these steps involve editing the corresponding *changelog* file, they cannot
 be performed by an *external user*).
 
@@ -511,11 +512,26 @@ KEYWORDS            <- c(
 VERSION_HISTORY <- tibble(
   Authors                  = c("Daniel Morillo"),
   Contributors             = c(""),
-  Reviewers                = c("Blanca Dolz"),
-  `Version nº`             = c("0.0"),
-  Name                     = c("Borrador inicial"),
-  Date                     = c("25-11-2022"),
-  `Change description`     = c("Primer borrador")
+  Reviewers                = list(
+    "Blanca Dolz",
+    c("Blanca Dolz", "Aina Gabarrell")
+  ),
+  `Version nº`             = c("0.0", "0.0.1"),
+  Name                     = c(
+    "Borrador inicial",
+    "Correcciones sobre el borrador inicial"
+  ),
+  Date                     = c(
+    "25-11-2022",
+    "08-02-2023"
+  ),
+  `Change description`     = list(
+    "Primer borrador",
+    c(
+      "Corrige erratas",
+      "Cambia referencia temporal en el nombre de archivos históricos por _CET_"
+    )
+  )
 )
 
 current_version <- VERSION_HISTORY |> slice(n())
@@ -526,9 +542,11 @@ current_version <- VERSION_HISTORY |> slice(n())
 <br>
 
 ```{r doc-info}
-current_version              |>
-  pivot_longer(everything()) |>
-  bind_rows(DOC_MAIN_INFO)   |>
+current_version                                                    |>
+  select(-`Change description`)                                    |>
+  mutate(Reviewers = Reviewers |> map_chr(paste, collapse = ', ')) |>
+  pivot_longer(everything())                                       |>
+  bind_rows(DOC_MAIN_INFO)                                         |>
   slice(1:3, 8:11, 4:6)
 ```
 
