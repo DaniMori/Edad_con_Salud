@@ -484,22 +484,8 @@ The steps to update the dataset file are the following:
 library(tidyverse)
 library(lubridate)
 
-DOC_MAIN_INFO <- tribble(
-  ~name,                  ~value,
-   "Responsible",          "",
-   "Dissemination level",  "Confidential (CCOMS team only)",
-   "Type",                 "Data management plan",
-   "Keywords",             c(
-                             "Edad con Salud",
-                             "Cohort 2011",
-                             "Wave 4",
-                             "data management",
-                             "OneDrive"
-                           ) |> paste(collapse = ', ')
-)
 RESPONSIBLE         <- ""
-DISSEMINATION_LEVEL <- "Confidential (CCOMS team only)"
-DOC_TYPE            <- 
+DISSEMINATION_LEVEL <- "Confidential (_Edad con Salud_ team only)"
 KEYWORDS            <- c(
   "Edad con Salud",
   "Cohort 2011",
@@ -507,28 +493,47 @@ KEYWORDS            <- c(
   "data management",
   "OneDrive"
 )
+DOC_MAIN_INFO <- tribble(
+  ~name,                  ~value,
+   "Responsible",          RESPONSIBLE,
+   "Dissemination level",  DISSEMINATION_LEVEL,
+   "Type",                 "Data management plan",
+   "Keywords",             KEYWORDS |> paste(collapse = ', ')
+)
 
 VERSION_HISTORY <- tibble(
-  Authors                  = c("Daniel Morillo"),
-  Contributors             = c(""),
+  Authors                  = "Daniel Morillo",
+  Contributors             = list(c("Aina Gabarrell", "Blanca Dolz")),
   Reviewers                = list(
-    "Blanca Dolz",
-    c("Blanca Dolz", "Aina Gabarrell")
+    c(
+      "Aina Gabarrell", "Beatriz Olaya", "Blanca Dolz", "Cristina Rodriguez",
+      "Joan Doménech", "Lea Francia", "Marta Miret"
+    )
   ),
-  `Version nº`             = c("0.0", "0.0.1"),
+  `Version nº`             = c("0.0", "0.0.1", "0.1.0"),
   Name                     = c(
     "Borrador inicial",
-    "Correcciones sobre el borrador inicial"
+    "Correcciones sobre el borrador inicial",
+    "Actualización de roles y proceso de actualización de datos"
   ),
   Date                     = c(
     "25-11-2022",
-    "08-02-2023"
+    "08-02-2023",
+    "14-02-2023"
   ),
   `Change description`     = list(
     "Primer borrador",
     c(
       "Corrige erratas",
       "Cambia referencia temporal en el nombre de archivos históricos por _CET_"
+    ),
+    c(
+      "Corrige indentación en sintaxis de Stata",
+      "Elimina el rol de acceso _data owner_",
+      paste(
+        "Actualiza proceso de actualización de los datasets, incluyendo",
+        "_notificación_ a todos los miembros mediante mención de canal"
+      )
     )
   )
 )
@@ -543,7 +548,10 @@ current_version <- VERSION_HISTORY |> slice(n())
 ```{r doc-info}
 current_version                                                    |>
   select(-`Change description`)                                    |>
-  mutate(Reviewers = Reviewers |> map_chr(paste, collapse = ', ')) |>
+  mutate(
+    Reviewers    = Reviewers    |> map_chr(paste, collapse = ', '),
+    Contributors = Contributors |> map_chr(paste, collapse = ', ')
+  )                                                                |>
   pivot_longer(everything())                                       |>
   bind_rows(DOC_MAIN_INFO)                                         |>
   slice(1:3, 8:11, 4:6)
