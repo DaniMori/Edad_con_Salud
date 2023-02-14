@@ -429,7 +429,8 @@ The steps to update the dataset file are the following:
     file, and then notifies the rest of the research team of the update through
     the [Edad con Salud/Actualización
     BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
-    channel.
+    channel, **tagging the whole channel (i.e. typing _@Actualización BDD_)** to
+    make sure that every member receives a notification.
 
 ### Update requested by a project member
 
@@ -475,7 +476,8 @@ The steps to update the dataset file are the following:
     file, and then notifies the rest of the research team of the update through
     the [Edad con Salud/Actualización
     BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
-    channel.
+    channel, **tagging the whole channel (i.e. typing _@Actualización BDD_)** to
+    make sure that every member receives a notification.
 
 \newpage
 
