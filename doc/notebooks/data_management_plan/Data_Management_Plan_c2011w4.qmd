@@ -185,9 +185,9 @@ taken into account:
 -   When working with datasets in Stata, the files must be saved using the
     `saveold` command (specifying that the version to use is 13), i.e.:
 
-``` stata
-saveold "[FILE_PATH]", replace version(13)
-```
+    ``` stata
+    saveold "[FILE_PATH]", replace version(13)
+    ```
 
 -   When working with R, it is recommended that the `haven` package is used.
     Functions `haven::read_dta()` and `haven::write_dta()` allow to work with
