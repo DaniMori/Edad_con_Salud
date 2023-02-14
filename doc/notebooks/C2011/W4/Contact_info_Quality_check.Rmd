@@ -144,7 +144,7 @@ TOWN      <- VARIABLES["town"]
 #   07=Unable to locate household or individual respondent
 #   11=Unsafe or dangerous area or no access to household/indivudual respondent
 #   21= Address doesn't exist
-ADDRESS_RELATED_CODES <- c(7, 11, 21) # TODO: Consider code 10?
+COMPLETE_INTERVIEW_CODE <- 1
 ```
 
 # Quality checks
@@ -370,3 +370,18 @@ contact_data                                               |>
 
 **The two cases shown have the same telephone number and need to be double
 checked**.
+
+## Contact data from refusals
+
+Checks that the address of the participants who refused to participate are no
+longer in the contact dataset:
+
+```{r}
+contact_data                                                        |>
+  left_join(fieldwork_data, by = c(Q0002 = "Household Id (Q0002)")) |>
+  filter(!`Fieldwork result code` %in% COMPLETE_INTERVIEW_CODE)     |>
+  select(Q0002, `Fieldwork result code`, `Fieldwork result`)
+```
+
+This participant refused to complete the interview and thus their contact
+details should not be present in the contact information dataset.
