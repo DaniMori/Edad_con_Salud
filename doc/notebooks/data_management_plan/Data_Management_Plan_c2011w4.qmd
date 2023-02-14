@@ -339,21 +339,19 @@ The data access roles defined are the following:
     files, meaning that they can edit other users' permissions, and add, edit,
     and delete files.
 
--   **Data owners:** Similar to the project owner, except that they only have
-    reading permissions for the `history` folder. This implies that they can
-    neither add, edit, or delete files, nor edit permissions in this folder.
-
--   **Data curators:** Have reading and writing permissions for the main folders
-    (but they cannot edit permissions). Similarly to the data owner, they only
-    have reading permissions for the `history` folder.
+-   **Data curators:** Have reading and writing permissions for the main and
+    `history` folders (but they cannot edit permissions). They can add, edit,
+    and delete files.
 
 -   **Project researchers:** Have reading permissions for the main folders, but
-    no permissions at all for the `history` folder.
+    no permissions at all for the `history` folder. They also have writing
+    permissions for the changelog file.
 
 -   **External users:** These are external researchers and other users that are
     assumed not to access or work with data processes often. They only have
     reading permissions for the main folders and no permissions for the
-    `history` folder.
+    `history` folder. They differ from the project researchers in that they do
+    not have permissions for the changelog file.
 
 The roles *project researcher* and *external user* are distinguished by their
 access permission to the changelog files, as detailed below.
@@ -368,8 +366,7 @@ folder*.
 | Role                   | main folder   | changelog file | history folder |
 |------------------------|---------------|----------------|----------------|
 | **Project owner**      | total control | total control  | total control  |
-| **Data owner**         | total control | total control  | read           |
-| **Data curator**       | edit          | edit           | read           |
+| **Data curator**       | edit          | edit           | edit           |
 | **Project researcher** | read          | edit           | none           |
 | **External user**      | read          | read           | none           |
 
