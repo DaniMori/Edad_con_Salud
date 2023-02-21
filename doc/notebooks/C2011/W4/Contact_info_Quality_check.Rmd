@@ -315,8 +315,8 @@ incomplete and need to be double checked: -->
 #| include: false
 #| echo:    true
 #| results: hide
-split_addresses                    |>
-  filter(address_extra |> is.na()) |>
+incomplete_addresses <- split_addresses |>
+  filter(address_extra |> is.na())      |>
   select(!!!ID_VARS, !!address_sym)
 ## TODO: Filter out the ones that are known to be single houses
 ```
