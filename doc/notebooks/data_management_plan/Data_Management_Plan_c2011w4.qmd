@@ -494,47 +494,50 @@ KEYWORDS            <- c(
   "OneDrive"
 )
 DOC_MAIN_INFO <- tribble(
-  ~name,                  ~value,
+  ~Field,                 ~Value,
    "Responsible",          RESPONSIBLE,
+   "Authors",              "Daniel Morillo",
+   "Reviewers",            c("Aina Gabarrell", "Blanca Dolz") |>
+                             paste(collapse = ', '),
+   "Approvers",            c(
+      "Aina Gabarrell", "Blanca Dolz",   "Cristina Rodriguez", "Daniel Morillo",
+      "Elvira Lara",    "Joan Doménech", "Lea Francia",        "Marta Miret"
+    ) |>
+      paste(collapse = ', '),
    "Dissemination level",  DISSEMINATION_LEVEL,
    "Type",                 "Data management plan",
    "Keywords",             KEYWORDS |> paste(collapse = ', ')
 )
 
 VERSION_HISTORY <- tibble(
-  Authors                  = "Daniel Morillo",
-  Contributors             = list(c("Aina Gabarrell", "Blanca Dolz")),
-  Reviewers                = list(
-    c(
-      "Aina Gabarrell", "Beatriz Olaya", "Blanca Dolz", "Cristina Rodriguez",
-      "Joan Doménech", "Lea Francia", "Marta Miret"
-    )
-  ),
-  `Version nº`             = c("0.0", "0.0.1", "0.1.0"),
+  `Version nº`             = c("0.0", "0.0.1", "0.1.0", "1.0.0"),
   Name                     = c(
-    "Borrador inicial",
-    "Correcciones sobre el borrador inicial",
-    "Actualización de roles y proceso de actualización de datos"
+    "Initial draft",
+    "Corrections on the initial draft",
+    "Roles and data update process updated",
+    "First release"
   ),
   Date                     = c(
     "25-11-2022",
     "08-02-2023",
-    "14-02-2023"
+    "14-02-2023",
+    "23-02-2023"
   ),
   `Change description`     = list(
-    "Primer borrador",
+    "First draft",
     c(
-      "Corrige erratas",
-      "Cambia referencia temporal en el nombre de archivos históricos por _CET_"
+      "Corrects errata",
+      "Changes the time reference in the name of the history files to _CET_"
     ),
     c(
-      "Corrige indentación en sintaxis de Stata",
-      "Elimina el rol de acceso _data owner_",
+      "Corrects indentation in Stata syntax",
+      "Drops the access role _data owner_",
       paste(
-        "Actualiza proceso de actualización de los datasets, incluyendo",
-        "_notificación_ a todos los miembros mediante mención de canal"
+        "Updates the dataset update process, including _notification_ to all",
+        "the channel members by means of a channel mention"
       )
-    )
+    ),
+    "Updates document control information and translates it to English"
   )
 )
 
@@ -546,15 +549,13 @@ current_version <- VERSION_HISTORY |> slice(n())
 <br>
 
 ```{r doc-info}
-current_version                                                    |>
-  select(-`Change description`)                                    |>
-  mutate(
-    Reviewers    = Reviewers    |> map_chr(paste, collapse = ', '),
-    Contributors = Contributors |> map_chr(paste, collapse = ', ')
-  )                                                                |>
-  pivot_longer(everything())                                       |>
-  bind_rows(DOC_MAIN_INFO)                                         |>
-  slice(1:3, 8:11, 4:6)
+DOC_MAIN_INFO |>
+  filter(!Field %in% c("Responsible")) |>
+  bind_rows(
+    current_version                 |>
+      select(-`Change description`) |>
+      pivot_longer(everything(), names_to = "Field", values_to = "Value")
+  )
 ```
 
 # VERSION HISTORY
@@ -562,5 +563,5 @@ current_version                                                    |>
 <br>
 
 ```{r version-history}
-VERSION_HISTORY |> select(-(Authors:Reviewers))
+VERSION_HISTORY
 ```
