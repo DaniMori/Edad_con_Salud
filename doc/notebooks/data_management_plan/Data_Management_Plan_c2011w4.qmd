@@ -1,0 +1,567 @@
+---
+title: "Data Management Plan for the 'Edad con Salud' Wave 4 of Cohort 2011"
+author: "Daniel Morillo"
+format:
+  docx:
+    toc: true
+    df-print: kable
+knitr:
+  opts_chunk:
+    echo: false
+    results: asis
+---
+
+# Introduction
+
+This document introduces a provisional data management plan for Edad con Salud.
+The intention is to implement this plan in the newly created datasets for the
+"4th wave" of the original sample (the so-called "2011 Cohort").
+
+## Scope
+
+This document refers to the following data sources from **Wave 4, Cohort 2011**:
+
+-   Raw responses from the field interviews
+
+-   Raw responses from the verbal autopsies
+
+The information contained in this document affects only these two data sources.
+No other datasets or data sources are considered here.
+
+# General description
+
+The aims of this plan are
+
+1.  Describe the current data storage structure
+
+2.  Propose a more systematic data storage structure, that can be flexible
+    enough to be embedded within the current one
+
+3.  Propose a systematic manipulation of the datasets, in order to respect the
+    aforementioned storage structure.
+
+# Current state of the data storage structure
+
+## Main folders
+
+The project Edad con Salud has the following two main folders:
+
+-   `Bases de datos maestras Edad con Salud`: This is the main folder where the
+    raw datasets from the interviews are stored. With only a few exceptions, any
+    other dataset related to the project is NOT storaged in this main folder. We
+    refer to this main folder as the *database folder*.
+
+-   `Documentacion Edad con Salud`: This is the main folder for documentation
+    other than the raw datasets from the interviews. In principle and with few
+    exceptions, most of the generated and additional datasets from the project
+    are stored in this main folder. We refer to this main folder as the
+    *documentation folder*.
+
+These two folders are stored under the OneDrive storage of user "Marta Miret
+Garcia". Therefore, the complete folder names are
+`Marta Miret Garcia - Bases de datos maestras Edad con Salud` and
+`Marta Miret Garcia - Documentacion Edad con Salud`, for the database and the
+documentation folder, respectively.
+
+When synchronized locally, their complete path will depend on the local
+configuration of each user's OneDrive storage on their computer. For a typical
+user with default OneDrive configuration options in any Windows system, the
+database folder path will be:
+
+`C:/Users/[USER_ID]/UAM/Marta Miret Garcia - Bases de datos maestras Edad con Salud`
+
+being `[USER_ID]` an identifier related to the local user, assigned directly by
+Windows, based on its user name. Similarly for the documentation folder, the
+path will be:
+
+`C:/Users/[USER_ID]/UAM/Marta Miret Garcia - Documentacion Edad con Salud`
+
+We will use the wildcards `[DB_FOLDER]` (database folder) and `[DOC_FOLDER]`
+(documentation folder) to refer to these two paths in subsequent file and folder
+paths.
+
+## Main folder structures
+
+In general, these two folders have a parallel structure, that identifies "Waves"
+and "Cohorts". Within the database folder, the structure for Cohort 2011, Wave
+4, is `Ola_4/Cohorte 2011`. Within the documentation folder, there is a folder
+for Wave 4, called `Edad con salud - Ola 4`. Within this one, there are several
+folders for different purposes (e.g., `Autopsia verbal` for the verbal
+autopsies) and, within it, a `Cohorte_2011` folder for the Cohort 2011 data (as
+there intends to be another one for the Cohort 2019 data collected in the same
+FIS call, i.e. its Wave 2).
+
+In summary, the two folders of interest for this plan are:
+
+-   **Interview data folder:** `[DB_FOLDER]/Ola_4/Cohorte 2011`. We will use the
+    wildcard `[INTERVIEW_DATA_FOLDER]` to refer to this path in subsequent file
+    and folder paths.
+
+-   **Verbal autopsy data folder:**
+    `[DOC_FOLDER]/Edad con salud - Ola 4/Autopsia_verbal/Cohorte_2011`. We will
+    use the wildcard `[VERBAL_AUTOPSY_DATA_FOLDER]` to refer to this path in
+    subsequent file and folder paths.
+
+These folder structures are inherited from the history of the Courage project
+and previous waves of the Edad con Salud project. This partial data management
+plan intends to respect these structures, as it will only refer to files and
+folders internal to them.
+
+## Other folders
+
+Within the interview data folder there is a folder named `Parciales`, which
+stores the (partial) historical versions of the interview dataset. Its path is
+therefore
+
+`[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales`
+
+## Dataset files
+
+### Interview datasets
+
+Currently, the interview datasets are only partial versions of the final
+interview dataset, each of them reporting cumulative progress on the fieldwork
+with the main interview. These files are stored in folder
+`[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales`, and each has a name with that
+follows the pattern `21057905Parcial1_[YYYYMMDD].dta`, being `[YYYYMMDD]` the
+date in which the file was created (by the field interview provider), with the
+format indicated by the wildcard (being `YYYY` the 4-digit year, and `MM` and
+`DD` two-digit month and day, respectively).
+
+### Verbal autopsy datasets
+
+Currently, there is only one dataset with a partial version of the final verbal
+autopsy dataset, reporting cumulative progress on the fieldwork with the verbal
+autopsy interviews. Its name is `PESC21057905_AutopsiaVerbal_Parcial1.dta`
+(there does not seem to be any date pattern).
+
+# Proposal of new data storage structure
+
+The following data structure intends to systematize the storage and access of
+the Cohort 2011, Wave 4 dataset files. In order to this, we propose a new
+structure internal to the "main folder structure". In contrast, in order to
+respect the previously inherited structure, the so-called "interview data" and
+"verbal autopsy data" folders will not be modified.
+
+## Internal folder structure
+
+Within each of the two main folders, a new folder named `history` will be
+created to store historical versions of the datasets. Any other folder will not
+be necessary and thus will not be present after the implementation of this plan.
+In this case, folder `[DB_FOLDER]/Ola_4/Cohorte 2011/Parciales` is the only one
+affected (which will be deleted).
+
+## Dataset files
+
+### Characterization
+
+For each of the two datasets (interview and verbal autopsy), two different file
+types will be considered:
+
+-   **Raw or master dataset:** This will refer to the most up-to-date dataset at
+    any time. Any analysis or process to be performed will be done with this
+    dataset, save exceptions.
+
+-   **Historical version of the dataset:** Previous, outdated datasets will be
+    stored as historical versions of the updated master dataset. The historical
+    datasets will in turn be characterized by being a *partial* version of the
+    dataset, or a *complete* one. Partial versions refer to the provisional
+    versions that are sent by the data provider during the fieldwork progress
+    and to not contain the whole sample of cases; these datasets will usually
+    become historical versions when a new, more complete version of the dataset
+    is provided by the data provider. The complete ones, on the other hand,
+    refer to the final version of the dataset delivered by the data provider.
+    These will usually be updated only when errors in the data need to be
+    corrected by the research team.
+
+### File formats {#sec-fileformats}
+
+As previously agreed for all datasets in the Edad con Salud project, all
+datasets will be stored in Stata 13 format.
+
+In order to comply with this specificacion, the following considerations must be
+taken into account:
+
+-   When working with datasets in Stata, the files must be saved using the
+    `saveold` command (specifying that the version to use is 13), i.e.:
+
+    ``` stata
+    saveold "[FILE_PATH]", replace version(13)
+    ```
+
+-   When working with R, it is recommended that the `haven` package is used.
+    Functions `haven::read_dta()` and `haven::write_dta()` allow to work with
+    Stata files. For reading files, the 'UTF-8' encoding must be specified in
+    Stata 13 files, so that the text variables and other literal strings are
+    properly enconded, i.e.:
+
+    ``` r
+    haven::read_dta("[FILE_PATH]", encoding = 'UTF-8')
+    ```
+    
+    For writing files from the R session, the version of Stata must be
+    specified, i.e.:
+    
+    ``` r
+    haven::write_dta([dataset_object], "[FILE_PATH]", version = 13)
+    ```
+
+**NOTE:** In all the previous code templates in this section, `[FILE_PATH]`
+stands for the path to the dataset file path. `[dataset_object]` represents the
+symbol that addresses an object in R that contains an in-memory dataset.
+
+### File paths {#sec-filepaths}
+
+The master datasets will have a path matching the following pattern:
+
+-   **Master interview dataset:** `[INTERVIEW_DATA_FOLDER]/rawdata_c2011w4.dta`
+
+-   **Master verbal autopsy dataset:**
+    `[VERBAL_AUTOPSY_DATA_FOLDER]/rawdata_autopsy_c2011w4.dta`
+
+The historical versions will be stored in their corresponding `history`
+subfolder. The name of the datasets in these cases will depend on whether a file
+is a partial or a complete version. For partial versions, the name will match
+the pattern `snapshot_partial_[YYYY-MM-DD_HH-MM].dta`, while for the complete
+ones, it will match the pattern `snapshot_[YYYY-MM-DD_HH-MM].dta`. That is,
+partial datasets will have the *infix* `partial_`, indicating it is not a
+complete version of the dataset, while the complete ones will have no infix. The
+`[YYYY-MM-DD_HH-mm]` wildcard will be the date in which that historical version
+is archived, with the format indicated: `YYYY` in the year in 4-digit format,
+`MM` the month with two digits, `DD` the day of the month with two digits (month
+and day both with a trailing zero if necessary), `HH` the hour in 24-hour
+format, and `mm` the minutes. Note that the date and time components are
+separated by an *underscore* character (`_`) while the components within the
+date and within the time are separated by *dashes* (`-`). Additionally, the
+times will be given in _CET_ (the mainland local time in Spain).
+
+Below are two examples of (hypotetical) historical dataset file paths, to help
+clarify the meaning of the different patterns:
+
+-   Partial version of the verbal autopsy dataset, archived on October 25th 2022
+    at 2:28PM CEST (= 1:28PM GMT):
+    `[VERBAL_AUTOPSY_DATA_FOLDER]/history/snapshot_partial_2022-10-25_13-28.dta`
+
+-   Complete version of the interview dataset, archived on December 15th 2022,
+    at 5:45PM CET (= 3:45PM GMT):
+    `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
+
+## Additional files
+
+### Changelog {#sec-changelog}
+
+Each folder will have an additional file with a "change log", that will keep
+track of the updates made to the corresonding dataset. These files will have the
+format of an Excel book, and their names will be `Changelog_DB_c2011w4.xlsx` and
+`Changelog_autopsy_DB_c2011w4.xlsx` for the interview and verbal autopsy folder,
+respectively.
+
+The two files will have the same structure, which will consist of a single
+spreadsheet named "Changelog_c2011w4". This spreadsheet will have the following
+column headers, in the first row (columns A to I):
+
+-   `REQUEST DATE`: Date when the change request is made
+
+-   `REQUESTER (data provider/any researcher)`: Name of the researcher who
+    requests the change; if the change is due to a new version of the dataset
+    provided by the data provider, it will be filled in with the name of the
+    data provider (i.e., "Ipsos") instead.
+
+-   `MODIFICATION`: Detailed description of the modification to be performed in
+    the dataset. If the update consists of a new (partial) version of the
+    dataset, provided by the data provider, it will state "Partial/Final dataset
+    update", whichever proceeds.
+
+-   `REASON`: The reason for requesting the update. If the update consists of a
+    new, more complete version of the dataset by the data provider, it will
+    state "Field work progress".
+
+-   `Syntax for modification in dataset (if any)`: This must be the Stata syntax
+    to be performed on the dataset for the change to be applied. Alternatively,
+    when the syntax is more complex, it may be in an external script/notebook in
+    R or other language; in such a case, a link in OneDrive/Sharepoint,
+    accessible to all the researchers, will be filled-in. Finally, if there is
+    no syntax (e.g., because the update implies substituting a partial version
+    of the dataset by a new, more complete one), `NA` will be filled-in.
+
+-   `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`: If any of the existing
+    datasets of the outcome variables may be affected by the change, they must
+    be listed here. It is preferrable to err on the *liberal side*, so **in case
+    of doubt about a dataset, it must be listed**. If there are no affected
+    datasets, `NA` will be filled-in.
+
+-   `REMARKS (if any)`: Any remarks about this update that don't fit in any of
+    the other fields must be stated here (the more information provided, the
+    better). When changes are requested to the data provider, ALL of them must
+    be explicitly detailed in this field. If there are no remarks, `NA` will be
+    filled-in.
+
+-   `IMPLEMENTATION DATE`: Date when the change is implemented and the dataset
+    updated.
+
+-   `REVIEWER`: Person in charge of implementing the change and performing the
+    update.
+
+## Folder and file permissions
+
+In order to avoid issues with the integrity of the data and confusion among the
+users, several access levels are defined. Please note that access levels are
+inherited throughout the folder structure; that is, if an access level is not
+specified for an element (file or folder), it inherits the access level of its
+*parent folder* (i.e., the one it in which it is contained).
+
+The access levels defined for the different elements of the data structure are:
+
+-   **Total control:** Users with this access level can read, write, and edit
+    the element. They can also edit other users' permissions for the element.
+
+-   **Edit:** Users with *edit* access level can read, write, and edit the
+    element. However, they cannot edit other users' permissions.
+
+-   **Read:** This access level grants reading access to an element, but users
+    with this access level can neither write or edit the element, nor edit its
+    permissions.
+
+-   **None:** This implies that no permissions are granted; the users cannot
+    read, write, or edit the element, nor can they edit its permissions.
+
+### Data access roles
+
+The permissions are assigned through OneDrive's advanced permission management
+interface, depending on the access level assigned to each user. The different
+users are assigned to a role, such that each role has different permissions to
+access the data structure. These permissions are implemented through OneDrive's
+advanced permission management interface.
+
+The data access roles defined are the following:
+
+-   **Project owners:** Have total control over all the folder structure and
+    files, meaning that they can edit other users' permissions, and add, edit,
+    and delete files.
+
+-   **Data curators:** Have reading and writing permissions for the main and
+    `history` folders (but they cannot edit permissions). They can add, edit,
+    and delete files.
+
+-   **Project researchers:** Have reading permissions for the main folders, but
+    no permissions at all for the `history` folder. They also have writing
+    permissions for the changelog file.
+
+-   **External users:** These are external researchers and other users that are
+    assumed not to access or work with data processes often. They only have
+    reading permissions for the main folders and no permissions for the
+    `history` folder. They differ from the project researchers in that they do
+    not have permissions for the changelog file.
+
+The roles *project researcher* and *external user* are distinguished by their
+access permission to the changelog files, as detailed below.
+
+### Permissions of the different roles
+
+@tbl-roles below summarizes the different roles and the access levels of each
+one to the different elements. Please not that, when an access level is not
+explicitly stated for an element, it inherits the permissions from its *parent
+folder*.
+
+| Role                   | main folder   | changelog file | history folder |
+|------------------------|---------------|----------------|----------------|
+| **Project owner**      | total control | total control  | total control  |
+| **Data curator**       | edit          | edit           | edit           |
+| **Project researcher** | read          | edit           | none           |
+| **External user**      | read          | read           | none           |
+
+: Folder and file permissions for the different access roles {#tbl-roles}
+
+## Dataset file updating process
+
+In order to update the dataset files, a process consisting of certain predefined
+steps must be followed. Please note, this process involves writing in the
+`history` folder(s), so it must be done by a user with the *project owner* role.
+In the case of the first steps (1-3), they are performed by any project member
+with role *project researcher*, *data curator*, *data owner*, or *project owner*
+(as these steps involve editing the corresponding *changelog* file, they cannot
+be performed by an *external user*).
+
+The steps for updating a dataset depend on whether the update is requested by
+the data provider (i.e., a new version is available), or by a project member
+(corrections or changes are requested to be implemented).
+
+### Update requested by the data provider
+
+This update can happen when a new version of the dataset is available. Normally,
+this will happen when there is progress in the fieldwork, so the dataset has
+more cases, or when an error has been corrected by the data provider (this error
+can be detected by the data provider themselves, or by the research team and
+notified to them).
+
+The steps to update the dataset file are the following:
+
+1.  The updating process starts with a notification by the data provider that a
+    new version is available
+2.  A project member inserts a *change request* in the corresponding changelog
+    file, filling in the fields `REQUEST DATE`,
+    `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
+    `Syntax for modification in dataset (if any)`,
+    `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`, and `REMARKS (if any)`,
+    according to the specification in the @sec-changelog section.
+3.  That same project member notifies the change request through the [Edad con
+    Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel in Microsoft Teams.
+4.  A project owner downloads the new dataset file from the data provider FTP
+    site, and stores locally in a temporary location.
+5.  That same project owner saves the new dataset file in Stata 13 format (see
+    Section @sec-fileformats for how to properly manipulate dataset files).
+6.  The current dataset file is moved to its new location in the corresponding
+    `history` folder, as specified in Section @sec-filepaths, and renamed
+    accordingly. Please note that its new name will depend on whether it is
+    partial fieldwork dataset (`snapshot_partial_[YYYY-MM-DD_HH-MM].dta`) or a
+    complete fieldwork dataset (`snapshot_[YYYY-MM-DD_HH-MM].dta`).
+7.  The new dataset file is moved to its new location as the current raw
+    dataset, and renamed accordingly: `rawdata_c2011w4.dta` for the master
+    interview dataset, or `rawdata_autopsy_c2011w4.dta` for the master verbal
+    autopsy dataset.
+8.  The project owner fills in the fileds `IMPLEMENTATION DATE` and `REVIEWER`
+    (with their own name) in the row of the change request of the changelog
+    file, and then notifies the rest of the research team of the update through
+    the [Edad con Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel, **tagging the whole channel (i.e. typing _@Actualización BDD_)** to
+    make sure that every member receives a notification.
+
+### Update requested by a project member
+
+This update will happen when a project member spots an error in the dataset.
+Normally, this will happen after the fieldwork is finished (i.e. in the complete
+dataset file), so that the current version of the dataset is being considered
+the final version until the update.
+
+The steps to update the dataset file are the following:
+
+1.  The updating process starts when a project member spots an error or several
+    errors in the current version of the dataset.
+2.  The project member inserts a *change request* in the corresponding changelog
+    file, filling in the fields `REQUEST DATE`,
+    `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
+    `Syntax for modification in dataset (if any)`,
+    `AFFECTEED OUTCOME VARIABLE DATASET(s) (if any)`, and `REMARKS (if any)`,
+    according to the specification in the @sec-changelog section. It is the
+    poject member's responsibility to make sure that the syntax in the field
+    `Syntax for modification in dataset (if any)` implements with fidelity the
+    description of the change stated in the field `MODIFICATION`.
+3.  That same project member notifies the change request through the [Edad con
+    Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel in Microsoft Teams.
+4.  A project owner runs the syntax in the new change request on the current
+    version of the dataset.
+5.  If an error is detected in the syntax, the project owner notifies the
+    project member of the error through the [Edad con Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel, and the project member goes back to step 2.
+6.  If the syntax runs without errors, the project owner copies the current
+    dataset file to its new location in the corresponding `history` folder, as
+    specified in Section @sec-filepaths, and renames it accordingly. Please note
+    that, in this case, the name will correspond to a complete fieldwork dataset
+    (`snapshot_[YYYY-MM-DD_HH-MM].dta`).
+7.  The project owner saves the dataset with the changes in the raw dataset
+    path, with its proper name (`rawdata_c2011w4.dta` for the master interview
+    dataset, or `rawdata_autopsy_c2011w4.dta` for the master verbal autopsy
+    dataset).
+8.  The project owner fills in the fileds `IMPLEMENTATION DATE` and `REVIEWER`
+    (with their own name) in the row of the change request of the changelog
+    file, and then notifies the rest of the research team of the update through
+    the [Edad con Salud/Actualización
+    BDD](https://teams.microsoft.com/l/channel/19%3a9e7491dfe8d444dcb505190b56645944%40thread.tacv2/Actualizaci%25C3%25B3n%2520BDD?groupId=2ea29658-d400-4d44-99a1-e1e52fbf9a62&tenantId=fc6602ef-8e88-4f1d-a206-e14a3bc19af2)
+    channel, **tagging the whole channel (i.e. typing _@Actualización BDD_)** to
+    make sure that every member receives a notification.
+
+\newpage
+
+```{r doc-control}
+#| include: false
+
+library(tidyverse)
+library(lubridate)
+
+RESPONSIBLE         <- ""
+DISSEMINATION_LEVEL <- "Confidential (_Edad con Salud_ team only)"
+KEYWORDS            <- c(
+  "Edad con Salud",
+  "Cohort 2011",
+  "Wave 4",
+  "data management",
+  "OneDrive"
+)
+DOC_MAIN_INFO <- tribble(
+  ~Field,                 ~Value,
+   "Responsible",          RESPONSIBLE,
+   "Authors",              "Daniel Morillo",
+   "Reviewers",            c("Aina Gabarrell", "Blanca Dolz") |>
+                             paste(collapse = ', '),
+   "Approvers",            c(
+      "Aina Gabarrell", "Blanca Dolz",   "Cristina Rodriguez", "Daniel Morillo",
+      "Elvira Lara",    "Joan Doménech", "Lea Francia",        "Marta Miret"
+    ) |>
+      paste(collapse = ', '),
+   "Dissemination level",  DISSEMINATION_LEVEL,
+   "Type",                 "Data management plan",
+   "Keywords",             KEYWORDS |> paste(collapse = ', ')
+)
+
+VERSION_HISTORY <- tibble(
+  `Version nº`             = c("0.0", "0.0.1", "0.1.0", "1.0.0"),
+  Name                     = c(
+    "Initial draft",
+    "Corrections on the initial draft",
+    "Roles and data update process updated",
+    "First release"
+  ),
+  Date                     = c(
+    "25-11-2022",
+    "08-02-2023",
+    "14-02-2023",
+    "23-02-2023"
+  ),
+  `Change description`     = list(
+    "First draft",
+    c(
+      "Corrects errata",
+      "Changes the time reference in the name of the history files to _CET_"
+    ),
+    c(
+      "Corrects indentation in Stata syntax",
+      "Drops the access role _data owner_",
+      paste(
+        "Updates the dataset update process, including _notification_ to all",
+        "the channel members by means of a channel mention"
+      )
+    ),
+    "Updates document control information and translates it to English"
+  )
+)
+
+current_version <- VERSION_HISTORY |> slice(n())
+```
+
+# DOCUMENT INFORMATION
+
+<br>
+
+```{r doc-info}
+DOC_MAIN_INFO |>
+  filter(!Field %in% c("Responsible")) |>
+  bind_rows(
+    current_version                 |>
+      select(-`Change description`) |>
+      pivot_longer(everything(), names_to = "Field", values_to = "Value")
+  )
+```
+
+# VERSION HISTORY
+
+<br>
+
+```{r version-history}
+VERSION_HISTORY
+```
