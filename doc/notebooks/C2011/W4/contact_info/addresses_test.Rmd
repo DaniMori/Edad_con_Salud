@@ -1,0 +1,80 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+With the following service I can query all the cadastral references from a
+municipality:
+
+```{r}
+#| message: false
+
+library(CatastRo)
+
+munic_ssff <- catr_atom_get_address("Ponferrada")
+```
+
+The cadastral reference seems to be embedded in the column `localId` in the last
+place, so I first extract it:
+
+```{r}
+#| message: false
+
+library(tidyverse)
+
+munic_codes <- munic_ssff |> separate(
+  localId,
+  c("prov_code", "munic_code", "code_3", "code_4", "cat_ref"),
+  remove = FALSE,
+  sep = '\\.'
+) |>
+  as_tibble() |>
+  select(localId, prov_code, munic_code, code_3, code_4, cat_ref)
+```
+
+The next step would be to try to get the geocoding of the cadastral reference:
+
+```{r}
+set.seed(1999)
+munic_codes_test <- munic_codes |> slice_sample(n = 20)
+
+munic_ssff_geocodes <- munic_codes_test |>
+  mutate(geocode = cat_ref |> map_dfr(catr_ovc_get_cpmrc)) |>
+  unnest(geocode)
+
+munic_ssff_geocodes |> slice_head(n = 5)
+```
+
+These cadastral references correspond to "parcels" and "entrances", so if I
+want to get all the properties that correspond to a certain direction, I
+understand I can do it with:
+
+```{r}
+#| message: false
+
+munic_ssff_geocodes|>
+  mutate(refs = map2_dfr(xcoord, ycoord, catr_ovc_get_rccoor, srs = "4326")) |>
+  select(refs) |>
+  unnest(refs) |>
+  slice_head(n = 5)
+```
+
+This does not seem to work (there are "no cadastral references for these
+coordinates"). Another alternative is to try to look "around" the
+given coordinates:
+
+```{r}
+#| message: false
+munic_ssff_geocodes|>
+  mutate(refs = map2_dfr(
+    xcoord, ycoord,
+    catr_ovc_get_rccoor_distancia,
+    srs = "4326")
+  ) |>
+  select(refs) |>
+  unnest(refs) |>
+  slice_head(n = 5)
+```
+
+This doesn't work either (Query does not produce results). The most likely
+hypothesis is that the SRS is being misused.

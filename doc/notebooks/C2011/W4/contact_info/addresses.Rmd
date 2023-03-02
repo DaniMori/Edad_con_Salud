@@ -1,0 +1,233 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(CatastRo)
+
+s <- catr_atom_get_address("Melque",
+  to = "Segovia"
+)
+
+```
+
+This gives me simple features within a municipality but I don't have
+the addresses.
+
+```{r}
+ab <- catr_ovc_get_cod_munic(2, 900)
+
+ab
+
+# Same query using the INE code
+
+ab2 <- catr_ovc_get_cod_munic(2, cmun_ine = 3)
+
+ab2
+```
+
+Gives the data from a municipality, but I need the municipality code.
+
+```{r}
+province_codes <- catr_ovc_get_cod_provinces()
+```
+
+Gives province codes, which may help get municipalities.
+
+```{r}
+library(tidyverse)
+
+province     <- "ALBACETE"
+municipality <- "Albacete"
+
+prov_code <- province_codes |>
+  filter(np == province) |>
+  pull(cpine)
+
+prov_code |> catr_ovc_get_cod_munic(900)
+```
+
+This works to get municipalities, but I still need the municipality code.
+The following may help:
+
+```{r}
+library(glue)
+
+prov_preffix <- province_codes |>
+  glue_data('{cpine}') |>
+  glue_collapse(sep = '|')
+
+prov_preffix <- glue('^({prov_preffix})')
+
+mun_code <- catr_atom_search_munic(municipality) |>
+  separate(munic, into = c("code", "municipality")) |>
+  mutate(code |> str_remove(prov_preffix)) |>
+  pull()
+```
+
+With the previous code I can have the code of a municipality.
+Then I can use:
+
+```{r}
+catr_ovc_get_cod_munic(prov_code, mun_code)
+```
+
+This gives me the information of a municipality I need from its name (including
+partial matches) and province.
+
+Having all the information from a municipality, I can get all the simple
+features using the first chunk:
+
+```{r}
+munic_data <- catr_ovc_get_cod_munic(prov_code, mun_code)
+
+munic_ssff <- catr_atom_get_address(
+  municipality,
+  to = munic_data |> pull(catr_to)
+)
+
+munic_ssff
+```
+
+Columns `glm_id` and `localId` apparently include the cadastral references
+(last field) of the elements, entrances and parcels. From the last one we
+get the cadastral reference.
+
+```{r}
+munic_ssff <- munic_ssff |> separate(
+  localId,
+  c("prov_code", "munic_code", "code_3", "code_4", "cat_ref"),
+  remove = FALSE,
+  sep = '\\.'
+)
+```
+
+Then, with these cadastral references I try to get an address:
+
+```{r}
+munic_ssff |>
+  slice(1) |>
+  pull(cat_ref) |>
+  catr_ovc_get_cpmrc(
+    province = province,
+    municipality = municipality
+  )
+```
+
+Now, this address does not have additional information (floor, door), and I
+have checked in Google Street View that it is a building with several
+apartments. Is it because it is of type "Entrance"?
+Let's try with a "Parcel":
+
+```{r}
+munic_ssff |>
+  filter(specification ==  "Parcel") |>
+  slice(1) |>
+  pull(cat_ref) |>
+  catr_ovc_get_cpmrc(
+    province = province,
+    municipality = municipality
+  )
+```
+
+It doesn't either (and it is also a building with more than 1 apartment);
+probably because "parcels" are soil parcels where "buildings" are built.
+
+Another strategy then is to provide the coordinates and consult the returned
+cadastral references:
+
+```{r}
+library(sf)
+
+sf_coord <- munic_ssff |>
+  slice(1) |>
+  mutate(coords = geometry |> st_coordinates()) |>
+  pull(coords) |>
+  as_tibble()
+
+catr_ovc_get_rccoor(
+  lat = sf_coord |> pull(X), lon = sf_coord |> pull(Y),
+  srs = "25830"
+)
+  
+```
+
+This takes nowhere (maybe I'm using the SRS wrong?). But I can go to the
+previous step and get the lat/lon coordinates from a parcel/entrance:
+
+```{r}
+sf_coord <- munic_ssff |>
+  filter(specification ==  "Parcel") |>
+  slice(1) |>
+  pull(cat_ref) |>
+  catr_ovc_get_cpmrc(
+    province = province,
+    municipality = municipality
+  )
+
+sf_coord |> mutate(
+    results = catr_ovc_get_rccoor(
+      lat = xcoord,
+      lon = ycoord,
+      srs = "4230"
+    )
+  ) |>
+  select(results) |>
+  unnest(results)
+```
+
+Let's see what happens if I try to get the addresses from the simple features
+of a municipality (obtained in the first chunk):
+
+```{r}
+munic_ssff <- s |> separate(
+  localId,
+  c("prov_code", "munic_code", "code_3", "code_4", "cat_ref"),
+  remove = FALSE,
+  sep = '\\.'
+)
+
+munic_ssff |>
+  slice(1) |>
+  pull(cat_ref) |>
+  catr_ovc_get_cpmrc() |>
+  mutate(
+    results = catr_ovc_get_rccoor(
+      lat = xcoord,
+      lon = ycoord,
+      srs = "4230"
+    )
+  ) |>
+  select(results) |>
+  unnest(results)
+```
+
+The same happens. The last alternative is to try to look "around" the
+given coordinates:
+
+```{r}
+munic_ssff <- s |> separate(
+  localId,
+  c("prov_code", "munic_code", "code_3", "code_4", "cat_ref"),
+  remove = FALSE,
+  sep = '\\.'
+)
+
+munic_ssff |>
+  slice(1) |>
+  pull(cat_ref) |>
+  catr_ovc_get_cpmrc() |>
+  mutate(
+    results = catr_ovc_get_rccoor_distancia(
+      lat = xcoord,
+      lon = ycoord,
+      srs = "4230"
+    )
+  ) |>
+  select(results) |>
+  unnest(results)
+```
+
+This doesn't work either. The most likely hypothesis is that the SRS is being
+misused.
