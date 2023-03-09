@@ -41,6 +41,7 @@ cohort (i.e. *original cohort*) of the *Edad con Salud* project.
 
 # The contact data is in a local path (and password-protected).
 MAIN_DATASET_PATH   <- r"(~\Workspace\21057906DatosContacto20230116.xlsx)"
+PROCESSED_ADDRESSES <- r"(~\Workspace\incomplete_addresses_processed.csv)"
 RETMAIL_DATA_PATH   <- file.path(
   read_ecs_folder("DOC"),
   "Edad con salud - Ola 4",
@@ -308,17 +309,27 @@ split_addresses                                   |>
   select(!!!ID_VARS, !!address_sym)
 ```
 
-<!-- The following addresses only have street name and number, so they may be
-incomplete and need to be double checked: -->
+The following addresses **only have street name and number** or may be
+incomplete for some other reasons, so they need to be double checked:
 
 ```{r incomplete-address-out-extra}
-#| include: false
-#| echo:    true
-#| results: hide
 incomplete_addresses <- split_addresses |>
   filter(address_extra |> is.na())      |>
   select(!!!ID_VARS, !!address_sym)
-## TODO: Filter out the ones that are known to be single houses
+processed_addresses <- read_delim(
+  PROCESSED_ADDRESSES,
+  delim = '\t',
+  col_types = cols(
+    incomplete = col_character(),
+    remarks    = col_character(),
+    .default   = col_double()
+  )
+)
+
+incomplete_addresses                                            |>
+  full_join(processed_addresses, by = c("InstanceID", "Q0002")) |>
+  filter(incomplete |> str_detect("(ok|no)", negate = TRUE))    |>
+  select(InstanceID, Q0002, DIRECCIÓN)
 ```
 
 ### Empty zip codes
