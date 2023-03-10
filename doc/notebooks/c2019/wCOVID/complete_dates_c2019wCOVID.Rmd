@@ -175,8 +175,8 @@ the new dataset, and compare it with the current version; this one has to be
 read in UTF-8, as the errors are "correctly coded" in UTF-8
 
 ```{r check-equivalence}
-dataset_current <- read_dta(CURRENT_FILEPATH) #, encoding = "UTF-8")
-dataset_compare <- read_dta(THROUGHPUT_FILEPATH)
+dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "latin1")
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "latin1")
 
 compare(dataset_current, dataset_compare, max_diffs = Inf)
 ```
