@@ -2,6 +2,7 @@
 title: "Correction of free-text variables in Cohort 2019 - Wave 1"
 output:
   html_document: default
+  html_notebook: default
 params:
   test: yes
 editor_options: 
@@ -171,6 +172,8 @@ must be explicitly specified.
 mod_covid <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 ```
 
+
+
 ## Check equivalence of datasets
 
 The newly created dataset is compared with the current version, to scan for
@@ -181,6 +184,9 @@ read in UTF-8, as the errors are "correctly coded" in UTF-8
 ```{r check-equivalence}
 dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "latin1")
 dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
+
+dataset_current <- dataset_current %>% arrange(ID_ECS)
+dataset_compare <- dataset_compare %>% arrange(ID_ECS)
 
 compare(dataset_current, dataset_compare, max_diffs = Inf)
 ```
