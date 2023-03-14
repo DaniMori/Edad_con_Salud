@@ -52,7 +52,8 @@ BACKUP_FILENAME    <- "snapshot_2023-03-09_12-50.dta" |> glue()
 CHANGELOG_FILENAME <- "Modificaciones_BBDD_COVID-19_substudy.xlsx"
 
 ### File paths:
-MOD_FILEPATH    <- file.path("C:/Users/Cristina/Documents/workspace/Edad_con_salud_Fichero_Mod.dta")
+MOD_FILEPATH    <- file.path(#"C:/Users/Cristina/Documents/workspace/Edad_con_salud_Fichero_Mod.dta")
+                             "C:/Users/Cris/Documents/Workspace/Edad_con_salud_Fichero_Mod2.dta") 
 CURRENT_FILEPATH   <- file.path(CCOVID_DIR, CURRENT_FILENAME)
 RESTORE_FILEPATH   <- file.path(HISTORY_DIR, RESTORE_FILENAME)
 BACKUP_FILEPATH    <- file.path(HISTORY_DIR, BACKUP_FILENAME)
@@ -156,6 +157,9 @@ use "throughput.dta"
 
 do re-run.do
 
+label variable COVID1 "COVID1. Diagnostico infeccion"
+label variable COVID1A "COVID1A. Metodo confirmacion"
+
 saveold "throughput.dta", replace version(13)
 ```
 
@@ -176,10 +180,11 @@ read in UTF-8, as the errors are "correctly coded" in UTF-8
 
 ```{r check-equivalence}
 dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "latin1")
-dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "latin1")
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 
 compare(dataset_current, dataset_compare, max_diffs = Inf)
 ```
+
 
 
 <!-- Then we write again the "throughput dataset", and repeat the process. We expect -->
