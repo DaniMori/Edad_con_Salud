@@ -21,6 +21,8 @@ library(readxl)
 library(Statamarkdown)
 library(waldo)
 library(sessioninfo)
+library(freqtables)
+library(sjlabelled)
 
 opts_chunk$set(echo = TRUE, results = 'markup')
 ```
@@ -129,6 +131,23 @@ if (!backup_ok) stop("Backup of current dataset file failed.")
 mod_covid <- read_dta(MOD_FILEPATH)
 ```
 
+##Modifying the lenght of variable labels
+The maximum number of characters that stata allows in its labels in version 13 
+is 80 characters. That is why we need to modify the width of the labels to this
+value before applying the changes in Stata.
+
+```{r}
+mod_covid <- mod_covid |> 
+  mutate(
+    across(
+     c(COVID1:ECON5),
+      ~ sjlabelled::set_label(.x, str_trunc(get_label(.x), width = 60))
+    )
+  )
+
+```
+
+
 ## Re-run all the subsequent changes
 
 The changes in the changelog file are first read and output to a Stata "do file"
@@ -139,8 +158,8 @@ changelog <- read_excel(CHANGELOG_FILEPATH)
 
 # The syntax of the subsequent changes are read from the changelog Excel file
 syntax_lines <- changelog                                  |>
-  filter(`RESPONSABLE (cualquier investigador)`!="Cris") |>
-  slice(-1)                                                |>
+  filter(`RESPONSABLE (cualquier investigador)`!= "Cris")  |>
+#  slice(-1)                                                |>
   # Assign syntactically-correct name (the one in the changelog is very long):
   rename_at(5, ~"Syntax")                                  |>
   pull(Syntax)
@@ -159,9 +178,6 @@ use "throughput.dta"
 
 do re-run.do
 
-label variable COVID1 "COVID1. Diagnostico infeccion"
-label variable COVID1A "COVID1A. Metodo confirmacion"
-
 saveold "throughput.dta", replace version(13)
 ```
 
@@ -174,7 +190,6 @@ mod_covid <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 ```
 
 
-
 ## Check equivalence of datasets
 
 The newly created dataset is compared with the current version, to scan for
@@ -183,11 +198,7 @@ the new dataset, and compare it with the current version; this one has to be
 read in UTF-8, as the errors are "correctly coded" in UTF-8
 
 ```{r check-equivalence}
-dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "latin1")
-dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 
-dataset_current <- dataset_current %>% arrange(ID_ECS)
-dataset_compare <- dataset_compare %>% arrange(ID_ECS)
 
 #compare(dataset_current, dataset_compare, max_diffs = Inf)
 ```
@@ -195,13 +206,25 @@ dataset_compare <- dataset_compare %>% arrange(ID_ECS)
 # Run comparison
 
 ```{r}
+# Read the two datasets of the comparison process
+dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "latin1")
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
+
+# Both datasets have disorganized cases. We solve this by sorting them
+# in ascending order.
+dataset_current <- dataset_current %>% arrange(ID_ECS)
+dataset_compare <- dataset_compare %>% arrange(ID_ECS)
+
 # Format the double coding dataset:
-current_varnames <- dataset_current |>
+variables_covid <- dataset_current |> 
+  select(-(ID_ECS)) |> 
   colnames()
-dataset_compare <- dataset_compare 
+dataset_compare <- dataset_compare |>
+  select(ID_ECS, all_of(variables_covid))
+
 # Collapse the datasets and compare the variables:
-current_varnames <- current_varnames |> setNames(current_varnames)
-diff_values <- current_varnames |> imap_dfr(
+variables_covid <- variables_covid |> setNames(variables_covid)
+diff_values <- variables_covid |> imap_dfr(
   ~{
     original_var  <- dataset_current |>
       select(ID_ECS, all_of(c(original = .x)))
@@ -226,6 +249,70 @@ n_diff_values
 cat('\n## Detail of non-missing cases:\n')
 diff_values
 ```
+
+There are still some errors to be corrected. With the HTML in hand, we will see
+what the variables are and which cases need to be corrected. 
+
+1. There are eight cases in which the year of the date is not correct: 
+"29/06/202" appears instead of "29/06/2020". Being a character vector, 
+we use the recode() function to replace these cases with the correct date.
+
+```{r}
+dataset_compare <- dataset_compare |> 
+              mutate(
+              FECHAFIN = recode(FECHAFIN,
+                                "29/06/202" = "29/06/2020")
+              )
+
+
+dataset_compare |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
+```
+
+# Run comparison (x2) - se compara la versión modificada sin errores con la versión modificada por demométrica
+
+```{r}
+# Read the two datasets of the comparison process
+
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
+
+# Both datasets have disorganized cases. We solve this by sorting them
+# in ascending order.
+mod_covid <- mod_covid %>% arrange(ID_ECS)
+dataset_compare <- dataset_compare %>% arrange(ID_ECS)
+
+# Format the double coding dataset:
+variables_covid <- mod_covid |> 
+  select(-(ID_ECS)) |> 
+  colnames()
+dataset_compare <- dataset_compare |>
+  select(ID_ECS, all_of(variables_covid))
+
+# Collapse the datasets and compare the variables:
+variables_covid <- variables_covid |> setNames(variables_covid)
+diff_values <- variables_covid |> imap_dfr(
+  ~{
+    original_var  <- mod_covid |>
+      select(ID_ECS, all_of(c(original = .x)))
+    dc_var <- dataset_compare |> select(ID_ECS, all_of(c(modified = .x)))
+    
+    full_join(original_var, dc_var, by = "ID_ECS")   |>
+      filter(
+        (original != modified) | (is.na(original) != is.na(modified))
+      ) |>
+      mutate(
+        across(
+          everything(),
+          ~if (is.labelled(.)) as_factor(.) else as.character(.) |> as_factor()
+        )
+      )
+  },
+  .id = "Variable"
+)
+n_diff_values <- diff_values |> count(Variable)
+cat('\n## Nº of non-matching cases by variable:\n')
+n_diff_values
+cat('\n## Detail of non-missing cases:\n')
+diff_values
 ```
 
 
