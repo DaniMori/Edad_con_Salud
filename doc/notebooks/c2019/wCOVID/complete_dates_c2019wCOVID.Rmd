@@ -24,7 +24,7 @@ library(sessioninfo)
 library(freqtables)
 library(sjlabelled)
 
-opts_chunk$set(echo = TRUE, results = 'markup')
+opts_chunk$set(echo = TRUE, results = 'asis')
 ```
 
 ```{r constants}
@@ -293,7 +293,7 @@ dataset_compare |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
 Then we write again the "throughput dataset", and repeat the process. We expect
 that no differences are found now between the two objects.
 
-# Run comparison (x2) the modified version without errors is compared with the modified version by DEMOMETRICA
+# Run comparison (x2) the modified version without errors is compared with the modified version by DEMOMETRICA {.tabset .tabset-fade}
 
 ```{r}
 # Read the two datasets of the comparison process
