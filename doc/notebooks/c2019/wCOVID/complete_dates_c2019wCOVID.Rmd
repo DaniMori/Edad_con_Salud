@@ -188,7 +188,6 @@ changelog <- read_excel(CHANGELOG_FILEPATH)
 # The syntax of the subsequent changes are read from the changelog Excel file
 syntax_lines <- changelog                                  |>
   filter(`RESPONSABLE (cualquier investigador)`!= "Cris")  |>
-#  slice(-1)                                                |>
   # Assign syntactically-correct name (the one in the changelog is very long):
   rename_at(5, ~"Syntax")                                  |>
   pull(Syntax)
@@ -212,12 +211,6 @@ saveold "throughput.dta", replace version(13)
 
 The dataset is read back again, taking into account that the "UTF-8" encoding
 must be explicitly specified.
-
-```{r read-implemented-changes}
-# Encoding must be specified for Stata 13 files
-mod_covid <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
-```
-
 
 ## Check equivalence of datasets
 
