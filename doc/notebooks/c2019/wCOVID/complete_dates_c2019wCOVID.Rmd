@@ -237,7 +237,7 @@ dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 dataset_current <- dataset_current %>% arrange(ID_ECS)
 dataset_compare <- dataset_compare %>% arrange(ID_ECS)
 
-# Format the double coding dataset:
+# Format the final comparing dataset:
 variables_covid <- dataset_current |> 
   select(-(ID_ECS)) |> 
   colnames()
@@ -305,7 +305,7 @@ dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 mod_covid <- mod_covid %>% arrange(ID_ECS)
 dataset_compare <- dataset_compare %>% arrange(ID_ECS)
 
-# Format the double coding dataset:
+# Format the final comparing dataset:
 variables_covid <- mod_covid |> 
   select(-(ID_ECS)) |> 
   colnames()
