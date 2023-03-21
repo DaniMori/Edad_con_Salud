@@ -338,7 +338,7 @@ diff_values
 
 # Saving new version
 ```{r saving-new-version}
-dataset_compare %>%  write_dta(CURRENT_FILENAME, version = STATA_VERSION)
+dataset_compare %>%  write_dta(NEW_FILEPATH, version = STATA_VERSION)
 ```
 
 # Final clean-up
