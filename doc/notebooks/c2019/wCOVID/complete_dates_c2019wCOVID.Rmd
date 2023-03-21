@@ -56,8 +56,8 @@ BACKUP_FILENAME    <- "snapshot_2023-03-09_12-50.dta" |> glue()
 CHANGELOG_FILENAME <- "Modificaciones_BBDD_COVID-19_substudy.xlsx"
 
 ### File paths:
-MOD_FILEPATH    <- file.path("C:/Users/Cristina/Documents/workspace/Edad_con_salud_Fichero_Mod2.dta")
-                             #"C:/Users/Cris/Documents/Workspace/Edad_con_salud_Fichero_Mod2.dta") 
+MOD_FILEPATH    <- file.path(#"C:/Users/Cristina/Documents/workspace/Edad_con_salud_Fichero_Mod2.dta")
+                             "C:/Users/Cris/Documents/Workspace/Edad_con_salud_Fichero_Mod2.dta") 
 CURRENT_FILEPATH   <- file.path(CCOVID_DIR, CURRENT_FILENAME)
 RESTORE_FILEPATH   <- file.path(HISTORY_DIR, RESTORE_FILENAME)
 BACKUP_FILEPATH    <- file.path(HISTORY_DIR, BACKUP_FILENAME)
@@ -75,13 +75,31 @@ NEW_FILEPATH <- if (IS_TEST) "test.dta" else CURRENT_FILEPATH
 When implementing the harmonization of the __Edad con Salud database__ - COVID 
 sub-study, errors were detected in some variables, such as 102 missing cases in
 the variable FECHAFIN. This error was reported to DEMOMETRICA and they returned 
-the database updated in these new variables. Along with a change in the nature 
-of the variable, it is necessary to re-execute the changes that have been made 
-in the COVID sub-study change history. 
+the database updated in these new variables. In addition to the changes made to
+correct the formatting of the dates, it is necessary to reapply the changes that
+are in the changelog. This script seeks to do this.
 
 The latest version of the COVID sub-study dataset available contains errors due
 to the UTF-8 encoding and the structure of the variables that DEMOMETRICA 
 modified, especially FECHAFIN.
+
+A description of the problem follows:
+
+CRP: *En la variable "FECHAFIN" tenemos 102 valores perdidos que no sabemos,*
+*por un lado, si es información que se puede recuperar; por otro, existen*
+*incongruencias con otras variables. Hay algunos casos en los que pone "cita"*
+*o incluso "rechazo" en la variable "ESTADO_ENTREVISTA", lo que no debería*
+*ocurrir; y hay casos que señalan "No contesta" que sí tienen datos en*
+*FECHAFIN.* *Si los valores perdidos en FECHAFIN se deben corresponder a*
+*entrevistas que no* *se llegaron a realizar porque no se pudo contactar con los*
+*participantes* *no debería ocurrir nada de esto, ¿cierto?*
+
+Eva: *Buenos días, Cristina* *He estado revisando en los ficheros que yo tenía*
+*anteriores a este y en todos* *los casos eran contactos que se hicieron los días*
+*29 y 30 de Junio, y alguno* *del 1 de julio, y que en estos casos no se*
+*fusionaron los datos.* *Te he actualizado la base que tu me enviaste.* *La fecha*
+*como bien dices, es la última vez que se hizo el contacto con el* *participante*
+*y el resultado fue una cita, no contesta, etc.*
 
 This script tries to re-execute those changes and finally fix the changes in 
 the FECHAFIN variable from factor format with numeric labels (1-8) to date
@@ -90,25 +108,36 @@ format.
 This script updates the codification of those variables to the proper UTF-8
 encoding, implementing the process through the following steps:
 
-1. Back up the current raw database file.
+1. The database in .sav format was downloaded from the e-mail 
+returned by DEMOMETRICA.
 
-1. Use the modified version as the new base version, on which to perform the
+2. The .sav file was opened in IBM SPSS Statistics version 29 and converted to ".dta" through the Save data as > Stata version 13 SE (*.dta) options. Final
+file is called "Edad_con_salud_Fichero_Mod2.dta".
+
+3. Back up the current raw database file.
+
+4. Load the modified dataset.
+
+5. Modify the length of variable labels due to limitations of lenght in Stata 13.
+
+6. Use the modified version as the new base version, on which to perform the
    subsequent changes.
 
-1. Re-run the changes that were performed in the last update (the one before
-Demometrica).
+7. Re-run the changes that were performed in the last update (the one before
+Demometrica) by loading the syntax cointained in the changelog archive. 
 
-1. Re-run all the changes that have been performed in the subsequent updated of
+6. Re-run all the changes that have been performed in the subsequent updated of
    the dataset.
 
-1. Check that the datasets are equivalent, except for those variables where
+7. Check that the datasets are equivalent, except for those variables where
    encoding errors were found.
 
-1. Save the version with these changes to the raw dataset file path.
+8. Save the version with these changes to the raw dataset file path.
    
 It has been tested that, with the current environment, the encoding is properly
 saved with `haven::write_dta()`. Therefore, no additional processing needs to
 be done, apparently.
+
 
 # Update process implementation
 
@@ -124,16 +153,15 @@ backup_ok <- file.copy(CURRENT_FILEPATH, BACKUP_FILEPATH)
 if (!backup_ok) stop("Backup of current dataset file failed.")
 ```
 
-## Open the `r RESTORE_FILENAME` historical version to restore
+## Open the modified version to apply changes
 
 ```{r load-restore-dataset}
-#historico_covid <- read_dta(RESTORE_FILEPATH)
 mod_covid <- read_dta(MOD_FILEPATH)
 ```
 
-##Modifying the lenght of variable labels
+## Modifying the length of variable labels
 The maximum number of characters that stata allows in its labels in version 13 
-is 80 characters. That is why we need to modify the width of the labels to this
+is 60 characters. That is why we need to modify the width of the labels to this
 value before applying the changes in Stata.
 
 ```{r}
@@ -195,13 +223,7 @@ mod_covid <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
 The newly created dataset is compared with the current version, to scan for
 differences. In order to avoid a long output, we read with the "wrong encoding"
 the new dataset, and compare it with the current version; this one has to be
-read in UTF-8, as the errors are "correctly coded" in UTF-8
-
-```{r check-equivalence}
-
-
-#compare(dataset_current, dataset_compare, max_diffs = Inf)
-```
+read in UTF-8, as the errors are "correctly coded" in UTF-8.
 
 # Run comparison
 
@@ -268,7 +290,10 @@ dataset_compare <- dataset_compare |>
 dataset_compare |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
 ```
 
-# Run comparison (x2) - se compara la versión modificada sin errores con la versión modificada por demométrica
+Then we write again the "throughput dataset", and repeat the process. We expect
+that no differences are found now between the two objects.
+
+# Run comparison (x2) the modified version without errors is compared with the modified version by DEMOMETRICA
 
 ```{r}
 # Read the two datasets of the comparison process
@@ -315,36 +340,17 @@ cat('\n## Detail of non-missing cases:\n')
 diff_values
 ```
 
+# Saving new version
+```{r saving-new-version}
+dataset_compare %>%  write_dta(CURRENT_FILENAME, version = STATA_VERSION)
+```
 
-<!-- Then we write again the "throughput dataset", and repeat the process. We expect -->
-<!-- that no differences are found now between the two objects. -->
+# Final clean-up
+Throughput files are cleaned up.
 
-<!-- ```{r recheck-equivalence} -->
-<!-- dataset_updated |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION) -->
-
-<!-- dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "UTF-8") -->
-<!-- dataset_compare <- read_dta(THROUGHPUT_FILEPATH) -->
-
-<!-- compare(dataset_current, dataset_compare, max_diffs = Inf) -->
-<!-- ``` -->
-
-<!-- Now we see that the two objects are exactly the same. -->
-
-<!-- ## New dataset writing -->
-
-<!-- The updated dataset is written back to the main raw dataset path. -->
-
-<!-- ```{r write-updated-dataset} -->
-<!-- dataset_updated |> write_dta(NEW_FILEPATH, version = STATA_VERSION) -->
-<!-- ``` -->
-
-<!-- # Final clean-up -->
-
-<!-- Throughput files are cleaned up. -->
-
-<!-- ```{r cleanup, results='hide'} -->
-<!-- file.remove(THROUGHPUT_FILEPATH, STATA_POST_CHANGES_SCRIPT) -->
-<!-- ``` -->
+```{r cleanup, results='hide'}
+file.remove(THROUGHPUT_FILEPATH, STATA_POST_CHANGES_SCRIPT)
+```
 
 # Session info
 
