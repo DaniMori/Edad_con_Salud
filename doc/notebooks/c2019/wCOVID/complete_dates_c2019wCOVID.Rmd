@@ -274,6 +274,8 @@ what the variables are and which cases need to be corrected.
 we use the recode() function to replace these cases with the correct date.
 
 ```{r}
+mod_covid <- dataset_compare # Save previous state for posterior comparison
+
 dataset_compare <- dataset_compare |> 
               mutate(
               FECHAFIN = recode(FECHAFIN,
