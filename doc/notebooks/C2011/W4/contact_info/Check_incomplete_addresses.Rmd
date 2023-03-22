@@ -1,0 +1,246 @@
+---
+title: "Edad con Salud C2011-W4, check of (possible) incomplete addresses"
+output: html_notebook
+params:
+  password: ''
+---
+
+# Introduction
+
+This notebook helps perform a manual check of the addresses that may be
+incomplete in the contact information of the participants in the 4th wave of the
+2011 cohort of the Edad con Salud project.
+
+The dataset file needs to be copied into a local folder
+**outside the Rstudio project**.
+
+
+**DO THE FOLLOWING STEPS:**
+
+1. Make sure the dataset is in your file system, then
+**update the path to the folder where the dataset file is located**, assigned to
+object `DATASETS_FOLDER` in line 36.
+
+2. Check that **the dataset file name coincides with the string in line 37**,
+assigned to the object `MAIN_DATASET_PATH`. If it does not,
+**update it with the proper name**.
+
+3. Run chunk `setup`.
+
+```{r setup}
+library(tidyverse)
+library(xlsx)
+library(rstudioapi)
+library(glue)
+
+DATASETS_FOLDER   <- "~/Workspace"
+MAIN_DATASET_FILE <- "21057906DatosContacto20230116.xlsx"
+OUTPUT_FILE       <- "incomplete_addresses.csv"
+
+MAIN_DATASET_PATH <- file.path(DATASETS_FOLDER, MAIN_DATASET_FILE)
+OUTPUT_PATH       <- file.path(DATASETS_FOLDER, OUTPUT_FILE)
+```
+
+# Procedure
+
+## Load personal data
+
+Personal data must be first loaded.
+When running the chunk `load-data`, you will be prompted to introduce the
+dataset file password.
+
+**DO THE FOLLOWING STEPS:**
+
+1. Run chunk `load-data`.
+
+2. **Input the access password** in the text box.
+
+```{r load-data}
+contact_data <- read.xlsx(
+  MAIN_DATASET_PATH,
+  sheetIndex = 1,
+  password   = if (interactive()) askForPassword()
+               else               params$password
+) |>
+  as_tibble()
+
+VARIABLES <- contact_data                  |>
+  colnames()                               |>
+  enframe(name = NULL, value = "variable") |>
+  add_column(
+    name = c(
+      "ID",
+      "alternative ID",
+      "proxy",
+      "name",
+      "surname",
+      "proxy's name",
+      "proxy's surname",
+      "address",
+      "town",
+      "zip code",
+      "comments",
+      "ID nº",
+      "Q0301a",
+      "Q0303",
+      "phone nº",
+      "alternative phone nº",
+      "Q0307",
+      "Q0306",
+      "Q0306b",
+      "Q0306c",
+      "Q0306d",
+      "NA."
+    ),
+    .before = 1
+  ) |>
+  deframe()
+
+ID_VARS   <- VARIABLES[c("ID", "alternative ID")] |> syms() |> unname()
+ADDRESS   <- VARIABLES["address"]
+ZIP_CODE  <- VARIABLES["zip code"]
+TOWN      <- VARIABLES["town"]
+
+address_sym <- sym(ADDRESS)
+town_sym    <- sym(TOWN)
+zipcode_sym <- sym(ZIP_CODE)
+
+STREETNUM_PATTERN  <- "(\\d{1,3}|S\\/N|SD/N)"
+SEPARATOR_PATTERN  <- "[\\s,\\.ºª\\-N]"
+STREETNAME_PATTERN <- glue("[^\\d]*(?={SEPARATOR_PATTERN}{STREETNUM_PATTERN})")
+EXTRA_PATTERN      <- glue("(?<={STREETNUM_PATTERN})[^\\d].+")
+
+split_addresses <- contact_data |> mutate(
+  !!!ID_VARS, !!address_sym,
+  address_num   = (!!address_sym) |> str_extract(STREETNUM_PATTERN),
+  address_name  = (!!address_sym) |> str_extract(STREETNAME_PATTERN),
+  address_extra = (!!address_sym) |> str_extract(EXTRA_PATTERN),
+  collapsed_address = paste(!!address_sym, !!town_sym, !!zipcode_sym)
+)
+
+incomplete_addresses <- split_addresses |> filter(address_extra |> is.na())
+
+if (!file.exists(OUTPUT_PATH)) {
+
+  incomplete_addresses                                          |>
+    mutate(index = row_number(), incomplete = NA, remarks = NA) |>
+    select(
+      index, !!!ID_VARS,
+      !!address_sym, !!town_sym, !!zipcode_sym,
+      incomplete, remarks
+    )                                                           |>
+    write_excel_csv2(OUTPUT_PATH, na = '')
+}
+```
+
+Chunk `load-data` will load the dataset, then it will perform some operations
+to create the variables needed to do the search.
+This includes creating a CSV file that will be filled in with the results of the
+search (IF it doesn't exist yet).
+
+## Create search index and iteration function
+
+The following chunk creates a function that iterates through the cases,
+outputs address of the the current case to the document output pane,
+**pastes it to the clipboard**, and iterates the index to the next case.
+
+**DO THE FOLLOWING STEPS:**
+
+1. Open the file ``r OUTPUT_PATH``.
+
+2. If it is the first time the procedure is run, go to step 2. If it has been
+run before and some of the addresses have already been searched,
+**update the numeric value of object `index` in line 160 to the first case**
+**that has not been searched yet** (look for value _"CONTINUE HERE"_ in column
+`remarks`).
+
+3. Run chunk `create-iteration-function`.
+
+```{r create-iteration-function}
+index <- 1
+
+next_address <- function() {
+
+  URL <- "https://www.google.es/maps/place/"
+
+  address <- incomplete_addresses |> slice(index) |> pull()
+
+  paste0(URL, address) |> writeClipboard()
+  cat(address, sep = '\n')
+  
+  index <<- index + 1
+}
+```
+
+## Do the address search
+
+When the previous steps are completed, the search has been setup.
+Now, you will need to perform the search of the addresses and fill in the file
+``r OUTPUT_PATH`` with the incomplete addresses.
+In order to this, you will iterate through the dataset,
+**searching for the addresses in Google Maps** to check whether they are
+incomplete or not.
+
+- **Incomplete addressess** are flats or buildings with more than one address,
+where a floor and/or door nº are missing.
+
+- **Complete addresses** are usually unifamiliar houses, where a floor and a
+door nº does not exist.
+
+**DO THE FOLLOWING STEPS:**
+
+1. Open the file ``r OUTPUT_PATH`` in MS Excel. Double click on the right side
+of the column headers if necessary to show the whole column span.
+
+2. Open a web browser (Chrome, Safari, Firefox, etc.).
+
+3. Run chunk `next-address` by going to line 244 and typing
+`CTRL + SHIFT + ENTER` (Windows) or `CMD + SHIFT + ENTER` (Mac).
+
+4. Type `ALT + TAB` (Windows) or `CMD + TAB` (Mac) until you change to the web
+browser window.
+
+5. Type `CTRL + L` (Firefox, Chrome, Edge) or `???` (Safari) to go to the URL
+text box.
+
+6. Type `CTRL + V` (Windows) or `CMD + V` (Mac) to paste in the search URL.
+
+7. If this automatic search fails, please introduce manually the address in the
+search textbox in Google Maps.
+
+8. Check the Street View preview to
+**find out whether the address corresponds to a complete or an incomplete one**.
+
+9. If you determine the address is:
+
+   - **Incomplete**: Go to the corresponding row in ``r OUTPUT_PATH`` and
+   type in "TRUE" in column G ("incomplete").
+   
+   - **You can't decide**: Go to the corresponding row in ``r OUTPUT_PATH`` and
+   explain why in column H ("remarks").
+   
+   - **Complete**: Do nothing.
+   
+10. Go to step 3, until you decide to stop the session or have finished with all
+    the cases.
+
+### IMPORTANT ADDITIONAL STEP
+
+If you decide to stop the session
+
+**DO THE FOLLOWING STEPS:**
+
+1. Go to the row corresponding to **the next case to check** when you restart
+the session.
+
+2. Type in _"CONTINUE HERE"_ in column H ("remarks").
+
+3. Save the file in MS Excel; when prompted whether
+"to keep using the CSV format" choose "YES".
+
+4. Close Excel.
+
+```{r next-address}
+next_address()
+```
+

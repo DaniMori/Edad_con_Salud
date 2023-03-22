@@ -1,0 +1,387 @@
+---
+title: |
+  Quality check of the personal data in 'Edad con Salud', Cohort 2011 - wave 4
+output:
+  word_document:
+    df_print: kable
+params:
+  password: 'password for the contact data file'
+---
+
+```{r setup}
+#| include: false
+
+knitr::opts_chunk$set(
+  results = 'asis',
+  echo    = FALSE
+)
+```
+
+```{r libraries}
+#| include: false
+library(tidyverse)
+library(xlsx)
+library(readxl)
+library(ecs.data)
+library(haven)
+library(assertive.strings)
+library(assertive.base)
+library(glue)
+library(lubridate)
+```
+
+# Introduction
+
+This document shows the result of the quality checks performed on the personal
+data (i.e. contact information) of the participants in the 4th wave of the 2011
+cohort (i.e. *original cohort*) of the *Edad con Salud* project.
+
+```{r load-data}
+#| include: false
+
+# The contact data is in a local path (and password-protected).
+MAIN_DATASET_PATH   <- r"(~\Workspace\21057906DatosContacto20230116.xlsx)"
+RETMAIL_DATA_PATH   <- file.path(
+  read_ecs_folder("DOC"),
+  "Edad con salud - Ola 4",
+  "Participantes",
+  "Cohorte 2011",
+  "Incidencias muestra de seguimiento.xlsx"
+)
+FIELDWORK_DATA_PATH <- file.path(
+  read_ecs_folder("DOC"),
+  "Edad con salud - Ola 4",
+  "Bases de datos",
+  "Cohorte 2011",
+  "Progreso del trabajo de campo",
+  "Final",
+  "20230116-FieldProgressReport-CálculoRatio.xlsx"
+)
+
+contact_data <- read.xlsx(
+  MAIN_DATASET_PATH,
+  sheetIndex = 1,
+  password   = if (interactive()) rstudioapi::askForPassword()
+               else               params$password
+) |>
+  as_tibble()
+
+returned_mail_motives <- read.xlsx(
+  RETMAIL_DATA_PATH,
+  sheetIndex = "Cartas devueltas"
+)             |>
+  as_tibble() |>
+  filter(year(FECHA.DEVOLUCIÓN) == 2022) # Keep only letters in last delivery
+
+fieldwork_data <- read_excel(
+  FIELDWORK_DATA_PATH,
+  sheet = "Hoja1",
+  skip  = 8
+) |>
+  rename(`Fieldwork result code` = `Final Result Code Household (Q0007a)...8`)
+
+result_codes <- read_excel(
+  FIELDWORK_DATA_PATH,
+  sheet = "CÓDIGOS COURAGE",
+  range = 'F6:F25'
+) |>
+  separate(
+    `Final Result Code`,
+    into    = c("Fieldwork result code", "Fieldwork result"),
+    sep     = '= ?',
+    convert = TRUE
+  )
+
+fieldwork_data <- fieldwork_data |>
+  left_join(result_codes, by = "Fieldwork result code")
+```
+
+```{r variable-definitions}
+#| include: false
+
+VARIABLES <- contact_data                  |>
+  colnames()                               |>
+  enframe(name = NULL, value = "variable") |>
+  add_column(
+    name = c(
+      "ID",
+      "alternative ID",
+      "proxy",
+      "name",
+      "surname",
+      "proxy's name",
+      "proxy's surname",
+      "address",
+      "town",
+      "zip code",
+      "comments",
+      "ID nº",
+      "Q0301a",
+      "Q0303",
+      "phone nº",
+      "alternative phone nº",
+      "Q0307",
+      "Q0306",
+      "Q0306b",
+      "Q0306c", 
+      "Q0306d",
+      "NA."
+    ),
+    .before = 1
+  ) |>
+  deframe()
+
+ID_VARS   <- VARIABLES[c("ID", "alternative ID")] |> syms() |> unname()
+SURNAME   <- VARIABLES["surname"]
+NAME      <- VARIABLES["name"]
+ADDRESS   <- VARIABLES["address"]
+PHONE     <- VARIABLES["phone nº"]
+PHONE_ALT <- VARIABLES["alternative phone nº"]
+ZIP_CODE  <- VARIABLES["zip code"]
+TOWN      <- VARIABLES["town"]
+
+# These codes are:
+#   07=Unable to locate household or individual respondent
+#   11=Unsafe or dangerous area or no access to household/indivudual respondent
+#   21= Address doesn't exist
+COMPLETE_INTERVIEW_CODE <- 1
+```
+
+# Quality checks
+
+The following data quality checks are performed on the contact information:
+
+## Participants' names
+
+### Completeness
+
+Checks whether the surnames (variable ``r SURNAME``) are filled in.
+
+```{r surnames}
+surname_sym <- sym(SURNAME)
+
+contact_data                                           |>
+  filter(is_missing_or_empty_character(!!surname_sym)) |>
+  select(!!!ID_VARS, !!surname_sym)
+```
+
+There are no empty values in ``r SURNAME``.
+
+### Duplicates
+
+Checks that the full names (variables ``r NAME`` and ``r SURNAME`` concatenated)
+are not duplicated.
+
+```{r name-duplicates}
+name_sym <- sym(NAME)
+
+contact_data               |>
+  unite(
+    "full_name",
+    !!name_sym, !!surname_sym,
+    sep    = ' ',
+    remove = FALSE)        |>
+  group_by(full_name)      |>
+  mutate(occurences = n()) |>
+  ungroup()                |>
+  filter(occurences > 1)   |>
+  select(!!!ID_VARS, !!name_sym, !!surname_sym)
+```
+
+There are no duplicates in the full names.
+
+## Addresses
+
+### Duplicates
+
+Checks whether the addresses (variable ``r ADDRESS``) are not duplicated.
+
+```{r address-duplicates}
+address_sym <- sym(ADDRESS)
+
+contact_data               |>
+  group_by(!!address_sym)  |>
+  mutate(occurences = n()) |>
+  ungroup()                |>
+  filter(occurences > 1)   |>
+  select(!!!ID_VARS, !!address_sym)
+```
+
+There are no duplicates in ``r ADDRESS``.
+
+### Returned letters
+
+Checks the address of the cases that correspond to returned letters with
+"incorrect address" or "incomplete address". The address in the letter and the
+contact information must be the same. For the letters with an address-related
+incidence, the addresses in the letters are manually checked.
+
+```{r returned-letters}
+town_sym <- sym(TOWN)
+zipcode_sym <- sym(ZIP_CODE)
+
+DIR_PATTERN <- "(?i)fallecid[oa]"
+
+returned_mail_motives <- returned_mail_motives |>
+  filter(ASUNTO |> str_detect(DIR_PATTERN, negate = TRUE))
+
+wrong_dir_data <- contact_data                                        |>
+  inner_join(returned_mail_motives, by = c(Q0002 = "ID"))             |>
+  select(!!!ID_VARS, !!address_sym, !!zipcode_sym, !!town_sym, ASUNTO) |>
+  arrange(Q0002)
+
+LETTERS_MISMATCHING_DIR <- tribble(
+  ~Q0002, ~mismatch,
+     281,      TRUE,
+     549,      TRUE,
+    1772,     FALSE,
+    2262,      TRUE,
+    2331,     FALSE,
+    2480,     FALSE,
+    2541,     FALSE,
+    2798,     FALSE,
+    2856,     FALSE,
+    2871,     FALSE,
+    2941,     FALSE,
+    2943,      TRUE,
+    2948,     FALSE,
+    2971,     FALSE,
+    3024,     FALSE,
+    3357,     FALSE,
+    3449,     FALSE,
+    3896,     FALSE, 
+    4670,     FALSE,
+    4675,     FALSE
+)
+
+wrong_dir_data <- wrong_dir_data |>
+  left_join(LETTERS_MISMATCHING_DIR, by = "Q0002")
+```
+
+The following addresses do not match the addresses in the letters returned;
+**please double check whether the participant has moved out to the new address
+listed below**:
+
+```{r returned-letters-mismatches}
+wrong_dir_data     |>
+  filter(mismatch) |>
+  select(-mismatch, -ASUNTO)
+```
+
+The following addresses match the addresses in the letters returned;
+**please double check whether the address listed below is correct, or update it
+otherwise**:
+
+```{r returned-letters-matches}
+wrong_dir_data      |>
+  filter(!mismatch) |>
+  select(-mismatch)
+```
+
+### Complete address
+
+Checks that the variable ``r ADDRESS`` is complete.
+In order to this, we first separate the street (type), the number, and the rest
+of the information.
+
+```{r complete-address}
+# Patterns to extract the address components:
+STREETNUM_PATTERN  <- "(\\d{1,3}|S\\/N|SD/N)"
+SEPARATOR_PATTERN  <- "[\\s,\\.ºª\\-N]"
+STREETNAME_PATTERN <- glue("[^\\d]*(?={SEPARATOR_PATTERN}{STREETNUM_PATTERN})")
+EXTRA_PATTERN      <- glue("(?<={STREETNUM_PATTERN})[^\\d].+")
+
+split_addresses <- contact_data |> transmute(
+  !!!ID_VARS, !!address_sym,
+  address_num   = (!!address_sym) |> str_extract(STREETNUM_PATTERN),
+  address_name  = (!!address_sym) |> str_extract(STREETNAME_PATTERN),
+  address_extra = (!!address_sym) |> str_extract(EXTRA_PATTERN)
+)
+```
+
+The following addresses are incomplete, because **they do not have an address
+number, and thus need to be double checked**:
+
+```{r incomplete-address-out}
+split_addresses                                   |>
+  filter(if_any(address_num:address_name, is.na)) |>
+  select(!!!ID_VARS, !!address_sym)
+```
+
+<!-- The following addresses only have street name and number, so they may be
+incomplete and need to be double checked: -->
+
+```{r incomplete-address-out-extra}
+#| include: false
+#| echo:    true
+#| results: hide
+incomplete_addresses <- split_addresses |>
+  filter(address_extra |> is.na())      |>
+  select(!!!ID_VARS, !!address_sym)
+## TODO: Filter out the ones that are known to be single houses
+```
+
+### Empty zip codes
+
+Checks that there are no empty zip codes (variable ``r ZIP_CODE``).
+
+```{r zip-codes}
+contact_data                                           |>
+  filter(is_missing_or_empty_character(!!zipcode_sym)) |>
+  select(!!!ID_VARS, !!zipcode_sym)
+```
+
+There are no empty values in ``r ZIP_CODE``.
+
+### Empty towns
+
+Checks that there are no empty towns (variable ``r TOWN``).
+
+```{r towns}
+contact_data                                        |>
+  filter(is_missing_or_empty_character(!!town_sym)) |>
+  select(!!!ID_VARS, !!town_sym)
+```
+
+There are no empty values in ``r TOWN``.
+
+## Telephone numbers
+
+### Duplicates
+
+Checks that the telephone numbers (variables ``r PHONE`` and ``r PHONE_ALT``)
+are not duplicated.
+
+```{r phone-duplicates}
+phone_sym    <- sym(PHONE)
+phonealt_sym <- sym(PHONE_ALT)
+
+id_var <- ID_VARS[[1]]
+
+contact_data                                               |>
+  select(!!!ID_VARS, !!phone_sym, !!phonealt_sym)          |>
+  pivot_longer(cols = c(!!phone_sym, !!phonealt_sym))      |>
+  filter(value |> is_not_na())                             |>
+  group_by(value)                                          |>
+  mutate(occurences = n())                                 |>
+  filter(occurences > 1, any(!!id_var != first(!!id_var))) |>
+  pivot_wider(id_cols = c(!!!ID_VARS))
+```
+
+**The two cases shown have the same telephone number and need to be double
+checked**.
+
+## Contact data from refusals
+
+Checks that the address of the participants who refused to participate are no
+longer in the contact dataset:
+
+```{r}
+contact_data                                                        |>
+  left_join(fieldwork_data, by = c(Q0002 = "Household Id (Q0002)")) |>
+  filter(!`Fieldwork result code` %in% COMPLETE_INTERVIEW_CODE)     |>
+  select(Q0002, `Fieldwork result code`, `Fieldwork result`)
+```
+
+This participant refused to complete the interview and thus their contact
+details should not be present in the contact information dataset.
