@@ -160,7 +160,7 @@ types will be considered:
 
 -   **Raw or master dataset:** This will refer to the most up-to-date dataset at
     any time. Any analysis or process to be performed will be done with this
-    dataset, save exceptions.
+    dataset (save exceptions).
 
 -   **Historical version of the dataset:** Previous, outdated datasets will be
     stored as historical versions of the updated master dataset. The historical
@@ -194,7 +194,7 @@ taken into account:
     Stata files. For reading files, the 'UTF-8' encoding must be specified in
     Stata 13 files, so that the text variables and other literal strings are
     properly enconded, i.e.:
-
+    
     ``` r
     haven::read_dta("[FILE_PATH]", encoding = 'UTF-8')
     ```
@@ -222,8 +222,8 @@ The master datasets will have a path matching the following pattern:
 The historical versions will be stored in their corresponding `history`
 subfolder. The name of the datasets in these cases will depend on whether a file
 is a partial or a complete version. For partial versions, the name will match
-the pattern `snapshot_partial_[YYYY-MM-DD_HH-MM].dta`, while for the complete
-ones, it will match the pattern `snapshot_[YYYY-MM-DD_HH-MM].dta`. That is,
+the pattern `snapshot_partial_[YYYY-MM-DD_HH-mm].dta`, while for the complete
+ones, it will match the pattern `snapshot_[YYYY-MM-DD_HH-mm].dta`. That is,
 partial datasets will have the *infix* `partial_`, indicating it is not a
 complete version of the dataset, while the complete ones will have no infix. The
 `[YYYY-MM-DD_HH-mm]` wildcard will be the date in which that historical version
@@ -376,9 +376,10 @@ folder*.
 
 In order to update the dataset files, a process consisting of certain predefined
 steps must be followed. Please note, this process involves writing in the
-`history` folder(s), so it must be done by a user with the *project owner* role.
+`history` folder(s), so it must be done by a user with the *project owner* or
+*data curator* role.
 In the case of the first steps (1-3), they are performed by any project member
-with role *project researcher*, *data curator*, *data owner*, or *project owner*
+with role *project researcher*, *data curator*, or *project owner*
 (as these steps involve editing the corresponding *changelog* file, they cannot
 be performed by an *external user*).
 
@@ -397,7 +398,7 @@ notified to them).
 The steps to update the dataset file are the following:
 
 1.  The updating process starts with a notification by the data provider that a
-    new version is available
+    new version is available.
 2.  A project member inserts a *change request* in the corresponding changelog
     file, filling in the fields `REQUEST DATE`,
     `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
