@@ -540,13 +540,15 @@ VERSION_HISTORY <- tibble(
     "Initial draft",
     "Corrections on the initial draft",
     "Roles and data update process updated",
-    "First release"
+    "First release",
+    "Versioning of the verbal autopsies performed by the research team"
   ),
   Date                     = c(
     "25-11-2022",
     "08-02-2023",
     "14-02-2023",
-    "23-02-2023"
+    "23-02-2023",
+    "22-03-2023"
   ),
   `Change description`     = list(
     "First draft",
@@ -562,7 +564,14 @@ VERSION_HISTORY <- tibble(
         "the channel members by means of a channel mention"
       )
     ),
-    "Updates document control information and translates it to English"
+    "Updates document control information and translates it to English",
+    c(
+      paste(
+        "Includes specifications for versioning the verbal autopsies dataset",
+        "with the autopsies conducted by the research team"
+      ),
+      "Corrects minor errata (including specification of time 'in minutes')"
+    )
   )
 )
 
