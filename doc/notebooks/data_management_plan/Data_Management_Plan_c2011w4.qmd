@@ -535,7 +535,7 @@ DOC_MAIN_INFO <- tribble(
 )
 
 VERSION_HISTORY <- tibble(
-  `Version nº`             = c("0.0", "0.0.1", "0.1.0", "1.0.0"),
+  `Version nº`             = c("0.0", "0.0.1", "0.1.0", "1.0.0", "1.1.0"),
   Name                     = c(
     "Initial draft",
     "Corrections on the initial draft",
