@@ -172,7 +172,11 @@ types will be considered:
     is provided by the data provider. The complete ones, on the other hand,
     refer to the final version of the dataset delivered by the data provider.
     These will usually be updated only when errors in the data need to be
-    corrected by the research team.
+    corrected by the research team. Additionally, there is another historical
+    version of the verbal autopsies to be considered, which contains the verbal
+    autopsies performed telephonically by the research team. This historical
+    version needs to be formatted and merged with the dataset from the
+    data provided.
 
 ### File formats {#sec-fileformats}
 
@@ -205,6 +209,18 @@ taken into account:
     ``` r
     haven::write_dta([dataset_object], "[FILE_PATH]", version = 13)
     ```
+
+-   The verbal autopsies performed by the research team are conducted using a
+    Google form and thus collected in a spreadsheet, that has a somewhat
+    different format from the one of the verbal autopsy datasets from the data
+    provider. This implies that several preprocessing steps must be done before
+    the dataset is considered the final version to be stored as the historical
+    version of this dataset (e.g. separating in columns certain values, changing
+    the variable names, and recoding values). Generating this recoded dataset
+    with the
+    [canonical format](https://dauam-my.sharepoint.com/:u:/r/personal/marta_miret_uam_es/Documents/Edad%20con%20Salud/Documentacion%20Edad%20con%20Salud/Edad%20con%20salud%20-%20Ola%204/Bases%20de%20datos/Cohorte%202011/Bases%20de%20datos%20vac%C3%ADas/autopsia_c11w4_vacia.dta?csf=1&web=1&e=ZBVdu9)
+    is the responsibility of the project member who
+    uploads it and [requests the update](#update-member).
 
 **NOTE:** In all the previous code templates in this section, `[FILE_PATH]`
 stands for the path to the dataset file path. `[dataset_object]` represents the
@@ -245,6 +261,11 @@ clarify the meaning of the different patterns:
 -   Complete version of the interview dataset, archived on December 15th 2022,
     at 5:45PM CET (= 3:45PM GMT):
     `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
+
+Finally, for the additional historical version of the verbal autopsies performed
+by the research team, the name will be: `snapshot_partial_research_team.dta`. In
+this case, as there will be no incremental versions (this dataset is supposed to
+be a definitive version), the dataset will not need to have a timestamp in it.
 
 ## Additional files
 
@@ -430,7 +451,7 @@ The steps to update the dataset file are the following:
     channel, **tagging the whole channel (i.e. typing _@Actualización BDD_)** to
     make sure that every member receives a notification.
 
-### Update requested by a project member
+### Update requested by a project member {#update-member}
 
 This update will happen when a project member spots an error in the dataset.
 Normally, this will happen after the fieldwork is finished (i.e. in the complete
@@ -440,7 +461,10 @@ the final version until the update.
 The steps to update the dataset file are the following:
 
 1.  The updating process starts when a project member spots an error or several
-    errors in the current version of the dataset.
+    errors in the current version of the dataset. Alternatively, when the
+    dataset with the verbal autopsies conducted by the research team is
+    available, the project member who uploads it can initiate the update
+    process by requesting to "merge" this dataset with the main one.
 2.  The project member inserts a *change request* in the corresponding changelog
     file, filling in the fields `REQUEST DATE`,
     `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
