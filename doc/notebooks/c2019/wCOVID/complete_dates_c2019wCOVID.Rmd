@@ -1,0 +1,356 @@
+---
+title: "Correction of free-text variables in Cohort 2019 - Wave 1"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+params:
+  test: no
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, message=FALSE}
+library(knitr)
+library(ecs.data)
+library(tidyverse)
+library(lubridate)
+library(haven)
+library(glue)
+library(readxl)
+library(Statamarkdown)
+library(waldo)
+library(sessioninfo)
+library(freqtables)
+library(sjlabelled)
+
+opts_chunk$set(echo = TRUE, results = 'asis')
+```
+
+```{r constants}
+# Execution configuration: ----
+IS_TEST <- params$test
+
+# Data values and variables objects: ----
+
+STATA_VERSION <- 13L
+
+# File system objects: ----
+
+## Current file structure:
+
+### Folders:
+
+DB_ROOT_DIR    <- read_ecs_folder("DB")
+CCOVID_SUBDIR <- "Subestudio_COVID"
+HISTORY_SUBDIR <- "Antiguas"
+CCOVID_DIR    <- file.path(DB_ROOT_DIR, CCOVID_SUBDIR)
+HISTORY_DIR    <- file.path(CCOVID_DIR, HISTORY_SUBDIR)
+
+### Files:
+
+CURRENT_FILENAME   <- "Edad_con_salud_Fichero_Completo.dta"
+RESTORE_FILENAME   <- "snapshot_2022-03-10_12-50.dta"
+
+# The backup file name is constructed with the "current date and time" object
+BACKUP_FILENAME    <- "snapshot_2023-03-21_15-47.dta"
+CHANGELOG_FILENAME <- "Modificaciones_BBDD_COVID-19_substudy.xlsx"
+
+### File paths:
+MOD_FILEPATH    <- file.path("~/workspace/Edad_con_salud_Fichero_Mod2.dta")
+
+CURRENT_FILEPATH   <- file.path(CCOVID_DIR, CURRENT_FILENAME)
+RESTORE_FILEPATH   <- file.path(HISTORY_DIR, RESTORE_FILENAME)
+BACKUP_FILEPATH    <- file.path(HISTORY_DIR, BACKUP_FILENAME)
+CHANGELOG_FILEPATH <- file.path(CCOVID_DIR, CHANGELOG_FILENAME)
+
+STATA_POST_CHANGES_SCRIPT <- "re-run.do"
+THROUGHPUT_FILEPATH       <- "throughput.dta"
+
+# The resulting "file" is set to a local "test path" in test mode; only when
+#   this process is finally implemented it is set to its actual path.
+NEW_FILEPATH <- if (IS_TEST) "test.dta" else CURRENT_FILEPATH
+```
+
+# Summary
+When implementing the harmonization of the __Edad con Salud database__ - COVID 
+sub-study, errors were detected in some variables, such as 102 missing cases in
+the variable FECHAFIN. This error was reported to DEMOMETRICA and they returned 
+the database updated in these new variables. In addition to the changes made to
+correct the formatting of the dates, it is necessary to reapply the changes that
+are in the changelog. This script seeks to do this.
+
+The latest version of the COVID sub-study dataset available contains errors due
+to the UTF-8 encoding and the structure of the variables that DEMOMETRICA 
+modified, especially FECHAFIN.
+
+A description of the problem follows:
+
+CRP: *En la variable "FECHAFIN" tenemos 102 valores perdidos que no sabemos,*
+*por un lado, si es información que se puede recuperar; por otro, existen*
+*incongruencias con otras variables. Hay algunos casos en los que pone "cita"*
+*o incluso "rechazo" en la variable "ESTADO_ENTREVISTA", lo que no debería*
+*ocurrir; y hay casos que señalan "No contesta" que sí tienen datos en*
+*FECHAFIN.* *Si los valores perdidos en FECHAFIN se deben corresponder a*
+*entrevistas que no* *se llegaron a realizar porque no se pudo contactar con los*
+*participantes* *no debería ocurrir nada de esto, ¿cierto?*
+
+Eva: *Buenos días, Cristina* *He estado revisando en los ficheros que yo tenía*
+*anteriores a este y en todos* *los casos eran contactos que se hicieron los días*
+*29 y 30 de Junio, y alguno* *del 1 de julio, y que en estos casos no se*
+*fusionaron los datos.* *Te he actualizado la base que tu me enviaste.* *La fecha*
+*como bien dices, es la última vez que se hizo el contacto con el* *participante*
+*y el resultado fue una cita, no contesta, etc.*
+
+This script tries to re-execute those changes and finally fix the changes in 
+the FECHAFIN variable from factor format with numeric labels (1-8) to date
+format. 
+
+This script updates the codification of those variables to the proper UTF-8
+encoding, implementing the process through the following steps:
+
+1. The database in .sav format was downloaded from the e-mail 
+returned by DEMOMETRICA.
+
+2. The .sav file was opened in IBM SPSS Statistics version 29 and converted to ".dta" through the Save data as > Stata version 13 SE (*.dta) options. Final
+file is called "Edad_con_salud_Fichero_Mod2.dta".
+
+3. Back up the current raw database file.
+
+4. Load the modified dataset.
+
+5. Modify the length of variable labels due to limitations of lenght in Stata 13.
+
+6. Use the modified version as the new base version, on which to perform the
+   subsequent changes.
+
+7. Re-run the changes that were performed in the last update (the one before
+Demometrica) by loading the syntax cointained in the changelog archive. 
+
+6. Re-run all the changes that have been performed in the subsequent updated of
+   the dataset.
+
+7. Check that the datasets are equivalent, except for those variables where
+   encoding errors were found.
+
+8. Save the version with these changes to the raw dataset file path.
+   
+It has been tested that, with the current environment, the encoding is properly
+saved with `haven::write_dta()`. Therefore, no additional processing needs to
+be done, apparently.
+
+
+# Update process implementation
+
+## Raw DB file backup
+
+We make a backup of the current DB file in the history.
+It is important to stop the process in case the backup copy is not correctly
+made, so we add that condition.
+
+```{r backup-dataset, eval=!IS_TEST}
+backup_ok <- file.copy(CURRENT_FILEPATH, BACKUP_FILEPATH)
+
+if (!backup_ok) stop("Backup of current dataset file failed.")
+```
+
+## Open the modified version to apply changes
+
+```{r load-restore-dataset}
+mod_covid <- read_dta(MOD_FILEPATH)
+```
+
+## Modifying the length of variable labels
+The maximum number of characters that stata allows in its labels in version 13 
+is 60 characters. That is why we need to modify the width of the labels to this
+value before applying the changes in Stata.
+
+```{r}
+mod_covid <- mod_covid |> 
+  mutate(
+    across(
+     c(COVID1:ECON5),
+      ~ sjlabelled::set_label(.x, str_trunc(get_label(.x), width = 60))
+    )
+  )
+
+```
+
+
+## Re-run all the subsequent changes
+
+The changes in the changelog file are first read and output to a Stata "do file"
+along with the dataset with the time and period variables updated.
+
+```{r preprocesss-post-changes}
+changelog <- read_excel(CHANGELOG_FILEPATH)
+
+# The syntax of the subsequent changes are read from the changelog Excel file
+syntax_lines <- changelog                                  |>
+  filter(`RESPONSABLE (cualquier investigador)`!= "Cris")  |>
+  # Assign syntactically-correct name (the one in the changelog is very long):
+  rename_at(5, ~"Syntax")                                  |>
+  pull(Syntax)
+
+# These syntax lines are then written (along with a temporary dataset) to a
+#   ".do" file (re-run.do), to be executed in Stata (see next chunk, labelled
+#   `rerun-post-changes`).
+syntax_lines    |> write_lines(STATA_POST_CHANGES_SCRIPT)
+mod_covid |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
+```
+
+The subsequent changes are then run in Stata.
+
+```{stata rerun-post-changes}
+use "throughput.dta"
+
+do re-run.do
+
+saveold "throughput.dta", replace version(13)
+```
+
+The dataset is read back again, taking into account that the "UTF-8" encoding
+must be explicitly specified.
+
+## Check equivalence of datasets
+
+The newly created dataset is compared with the current version, to scan for
+differences. In order to avoid a long output, we read with the "wrong encoding"
+the new dataset, and compare it with the current version; this one has to be
+read in UTF-8, as the errors are "correctly coded" in UTF-8.
+
+# Run comparison
+
+```{r}
+# Read the two datasets of the comparison process
+dataset_current <- read_dta(CURRENT_FILEPATH, encoding = "latin1")
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
+
+# Both datasets have disorganized cases. We solve this by sorting them
+# in ascending order.
+dataset_current <- dataset_current %>% arrange(ID_ECS)
+dataset_compare <- dataset_compare %>% arrange(ID_ECS)
+
+# Format the final comparing dataset:
+variables_covid <- dataset_current |> 
+  select(-(ID_ECS)) |> 
+  colnames()
+dataset_compare <- dataset_compare |>
+  select(ID_ECS, all_of(variables_covid))
+
+# Collapse the datasets and compare the variables:
+variables_covid <- variables_covid |> setNames(variables_covid)
+diff_values <- variables_covid |> imap_dfr(
+  ~{
+    original_var  <- dataset_current |>
+      select(ID_ECS, all_of(c(original = .x)))
+    dc_var <- dataset_compare |> select(ID_ECS, all_of(c(modified = .x)))
+    
+    full_join(original_var, dc_var, by = "ID_ECS")   |>
+      filter(
+        (original != modified) | (is.na(original) != is.na(modified))
+      ) |>
+      mutate(
+        across(
+          everything(),
+          ~if (is.labelled(.)) as_factor(.) else as.character(.) |> as_factor()
+        )
+      )
+  },
+  .id = "Variable"
+)
+n_diff_values <- diff_values |> count(Variable)
+cat('\n## Nº of non-matching cases by variable:\n')
+n_diff_values
+cat('\n## Detail of non-missing cases:\n')
+diff_values
+```
+
+There are still some errors to be corrected. With the HTML in hand, we will see
+what the variables are and which cases need to be corrected. 
+
+1. There are eight cases in which the year of the date is not correct: 
+"29/06/202" appears instead of "29/06/2020". Being a character vector, 
+we use the recode() function to replace these cases with the correct date.
+
+```{r}
+mod_covid <- dataset_compare # Save previous state for posterior comparison
+
+dataset_compare <- dataset_compare |> 
+              mutate(
+              FECHAFIN = recode(FECHAFIN,
+                                "29/06/202" = "29/06/2020")
+              )
+
+
+dataset_compare |> write_dta(THROUGHPUT_FILEPATH, version = STATA_VERSION)
+```
+
+Then we write again the "throughput dataset", and repeat the process. We expect
+that no differences are found now between the two objects.
+
+# Run comparison (x2) the modified version without errors is compared with the modified version by DEMOMETRICA {.tabset .tabset-fade}
+
+```{r}
+# Read the two datasets of the comparison process
+
+dataset_compare <- read_dta(THROUGHPUT_FILEPATH, encoding = "UTF-8")
+
+# Both datasets have disorganized cases. We solve this by sorting them
+# in ascending order.
+mod_covid <- mod_covid %>% arrange(ID_ECS)
+dataset_compare <- dataset_compare %>% arrange(ID_ECS)
+
+# Format the final comparing dataset:
+variables_covid <- mod_covid |> 
+  select(-(ID_ECS)) |> 
+  colnames()
+dataset_compare <- dataset_compare |>
+  select(ID_ECS, all_of(variables_covid))
+
+# Collapse the datasets and compare the variables:
+variables_covid <- variables_covid |> setNames(variables_covid)
+diff_values <- variables_covid |> imap_dfr(
+  ~{
+    original_var  <- mod_covid |>
+      select(ID_ECS, all_of(c(original = .x)))
+    dc_var <- dataset_compare |> select(ID_ECS, all_of(c(modified = .x)))
+    
+    full_join(original_var, dc_var, by = "ID_ECS")   |>
+      filter(
+        (original != modified) | (is.na(original) != is.na(modified))
+      ) |>
+      mutate(
+        across(
+          everything(),
+          ~if (is.labelled(.)) as_factor(.) else as.character(.) |> as_factor()
+        )
+      )
+  },
+  .id = "Variable"
+)
+n_diff_values <- diff_values |> count(Variable)
+cat('\n## Nº of non-matching cases by variable:\n')
+n_diff_values
+cat('\n## Detail of non-missing cases:\n')
+diff_values
+```
+
+# Saving new version
+```{r saving-new-version}
+dataset_compare %>%  write_dta(NEW_FILEPATH, version = STATA_VERSION)
+```
+
+# Final clean-up
+Throughput files are cleaned up.
+
+```{r cleanup, results='hide'}
+file.remove(THROUGHPUT_FILEPATH, STATA_POST_CHANGES_SCRIPT)
+```
+
+# Session info
+
+```{r session-info}
+session_info()
+```
+
