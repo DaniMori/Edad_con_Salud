@@ -463,8 +463,9 @@ The steps to update the dataset file are the following:
 1.  The updating process starts when a project member spots an error or several
     errors in the current version of the dataset. Alternatively, when the
     dataset with the verbal autopsies conducted by the research team is
-    available, the project member who uploads it can initiate the update
-    process by requesting to "merge" this dataset with the main one.
+    available, the project member who uploads it (must be a Project owner or
+    Data curator) can initiate the update process by requesting to "merge" this
+    dataset with the main one.
 2.  The project member inserts a *change request* in the corresponding changelog
     file, filling in the fields `REQUEST DATE`,
     `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
