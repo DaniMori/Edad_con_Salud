@@ -160,7 +160,7 @@ types will be considered:
 
 -   **Raw or master dataset:** This will refer to the most up-to-date dataset at
     any time. Any analysis or process to be performed will be done with this
-    dataset, save exceptions.
+    dataset (save exceptions).
 
 -   **Historical version of the dataset:** Previous, outdated datasets will be
     stored as historical versions of the updated master dataset. The historical
@@ -172,7 +172,11 @@ types will be considered:
     is provided by the data provider. The complete ones, on the other hand,
     refer to the final version of the dataset delivered by the data provider.
     These will usually be updated only when errors in the data need to be
-    corrected by the research team.
+    corrected by the research team. Additionally, there is another historical
+    version of the verbal autopsies to be considered, which contains the verbal
+    autopsies performed telephonically by the research team. This historical
+    version needs to be formatted and merged with the dataset from the
+    data provided.
 
 ### File formats {#sec-fileformats}
 
@@ -194,7 +198,7 @@ taken into account:
     Stata files. For reading files, the 'UTF-8' encoding must be specified in
     Stata 13 files, so that the text variables and other literal strings are
     properly enconded, i.e.:
-
+    
     ``` r
     haven::read_dta("[FILE_PATH]", encoding = 'UTF-8')
     ```
@@ -205,6 +209,18 @@ taken into account:
     ``` r
     haven::write_dta([dataset_object], "[FILE_PATH]", version = 13)
     ```
+
+-   The verbal autopsies performed by the research team are conducted using a
+    Google form and thus collected in a spreadsheet, that has a somewhat
+    different format from the one of the verbal autopsy datasets from the data
+    provider. This implies that several preprocessing steps must be done before
+    the dataset is considered the final version to be stored as the historical
+    version of this dataset (e.g. separating in columns certain values, changing
+    the variable names, and recoding values). Generating this recoded dataset
+    with the
+    [canonical format](https://dauam-my.sharepoint.com/:u:/r/personal/marta_miret_uam_es/Documents/Edad%20con%20Salud/Documentacion%20Edad%20con%20Salud/Edad%20con%20salud%20-%20Ola%204/Bases%20de%20datos/Cohorte%202011/Bases%20de%20datos%20vac%C3%ADas/autopsia_c11w4_vacia.dta?csf=1&web=1&e=ZBVdu9)
+    is the responsibility of the project member who
+    uploads it and [requests the update](#update-member).
 
 **NOTE:** In all the previous code templates in this section, `[FILE_PATH]`
 stands for the path to the dataset file path. `[dataset_object]` represents the
@@ -222,8 +238,8 @@ The master datasets will have a path matching the following pattern:
 The historical versions will be stored in their corresponding `history`
 subfolder. The name of the datasets in these cases will depend on whether a file
 is a partial or a complete version. For partial versions, the name will match
-the pattern `snapshot_partial_[YYYY-MM-DD_HH-MM].dta`, while for the complete
-ones, it will match the pattern `snapshot_[YYYY-MM-DD_HH-MM].dta`. That is,
+the pattern `snapshot_partial_[YYYY-MM-DD_HH-mm].dta`, while for the complete
+ones, it will match the pattern `snapshot_[YYYY-MM-DD_HH-mm].dta`. That is,
 partial datasets will have the *infix* `partial_`, indicating it is not a
 complete version of the dataset, while the complete ones will have no infix. The
 `[YYYY-MM-DD_HH-mm]` wildcard will be the date in which that historical version
@@ -245,6 +261,11 @@ clarify the meaning of the different patterns:
 -   Complete version of the interview dataset, archived on December 15th 2022,
     at 5:45PM CET (= 3:45PM GMT):
     `[INTERVIEW_DATA_FOLDER]/history/snapshot_2022-12-15_15-45.dta`
+
+Finally, for the additional historical version of the verbal autopsies performed
+by the research team, the name will be: `snapshot_partial_research_team.dta`. In
+this case, as there will be no incremental versions (this dataset is supposed to
+be a definitive version), the dataset will not need to have a timestamp in it.
 
 ## Additional files
 
@@ -376,9 +397,10 @@ folder*.
 
 In order to update the dataset files, a process consisting of certain predefined
 steps must be followed. Please note, this process involves writing in the
-`history` folder(s), so it must be done by a user with the *project owner* role.
+`history` folder(s), so it must be done by a user with the *project owner* or
+*data curator* role.
 In the case of the first steps (1-3), they are performed by any project member
-with role *project researcher*, *data curator*, *data owner*, or *project owner*
+with role *project researcher*, *data curator*, or *project owner*
 (as these steps involve editing the corresponding *changelog* file, they cannot
 be performed by an *external user*).
 
@@ -397,7 +419,7 @@ notified to them).
 The steps to update the dataset file are the following:
 
 1.  The updating process starts with a notification by the data provider that a
-    new version is available
+    new version is available.
 2.  A project member inserts a *change request* in the corresponding changelog
     file, filling in the fields `REQUEST DATE`,
     `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
@@ -429,7 +451,7 @@ The steps to update the dataset file are the following:
     channel, **tagging the whole channel (i.e. typing _@Actualización BDD_)** to
     make sure that every member receives a notification.
 
-### Update requested by a project member
+### Update requested by a project member {#update-member}
 
 This update will happen when a project member spots an error in the dataset.
 Normally, this will happen after the fieldwork is finished (i.e. in the complete
@@ -439,7 +461,11 @@ the final version until the update.
 The steps to update the dataset file are the following:
 
 1.  The updating process starts when a project member spots an error or several
-    errors in the current version of the dataset.
+    errors in the current version of the dataset. Alternatively, when the
+    dataset with the verbal autopsies conducted by the research team is
+    available, the project member who uploads it (must be a Project owner or
+    Data curator) can initiate the update process by requesting to "merge" this
+    dataset with the main one.
 2.  The project member inserts a *change request* in the corresponding changelog
     file, filling in the fields `REQUEST DATE`,
     `REQUESTER (data provider/any researcher)`, `MODIFICATION`, `REASON`,
@@ -510,18 +536,20 @@ DOC_MAIN_INFO <- tribble(
 )
 
 VERSION_HISTORY <- tibble(
-  `Version nº`             = c("0.0", "0.0.1", "0.1.0", "1.0.0"),
+  `Version nº`             = c("0.0", "0.0.1", "0.1.0", "1.0.0", "1.1.0"),
   Name                     = c(
     "Initial draft",
     "Corrections on the initial draft",
     "Roles and data update process updated",
-    "First release"
+    "First release",
+    "Versioning of the verbal autopsies performed by the research team"
   ),
   Date                     = c(
     "25-11-2022",
     "08-02-2023",
     "14-02-2023",
-    "23-02-2023"
+    "23-02-2023",
+    "22-03-2023"
   ),
   `Change description`     = list(
     "First draft",
@@ -537,7 +565,14 @@ VERSION_HISTORY <- tibble(
         "the channel members by means of a channel mention"
       )
     ),
-    "Updates document control information and translates it to English"
+    "Updates document control information and translates it to English",
+    c(
+      paste(
+        "Includes specifications for versioning the verbal autopsies dataset",
+        "with the autopsies conducted by the research team"
+      ),
+      "Corrects minor errata (including specification of time 'in minutes')"
+    )
   )
 )
 
